@@ -1,31 +1,65 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gellelio Galileo Training Simulator</title>
+  <title>Gellelio — Galileo GDS Training Simulator</title>
+  <meta name="description" content="Offline Galileo/Travelport GDS practice simulator for aviation students. Educational tool by Wings Fly Aviation Academy.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="topbar">
     <div class="window-title"><span class="title-icon">T</span> Travelport Smartpoint - Galileo Training</div>
-    <div class="window-controls"><span>86J</span><b>ON</b><span>86JJ</span><i>—</i><i>□</i><i>×</i></div>
+    <div class="window-controls">
+      <span class="ctrl-tab">A</span><span class="ctrl-tab">B</span><span class="ctrl-tab">C</span><span class="ctrl-tab">D</span><span class="ctrl-tab">E</span>
+      <span class="ctrl-office">86JJ</span><b class="ctrl-on">ON</b><span class="ctrl-office2">86JJ</span>
+      <i class="ctrl-btn">&#8212;</i><i class="ctrl-btn">&#9633;</i><i class="ctrl-btn close">&#215;</i>
+    </div>
   </header>
-  <nav class="menu-bar"><span>APPLICATION</span><span>TERMINAL</span><span>HISTORY</span><span>WINDOW</span><span>PNR</span><span>SEARCH</span><span>SELL</span><span>TOOLS</span><span>HELP</span></nav>
+  <nav class="menu-bar">
+    <span>APPLICATION</span><span>TERMINAL</span><span>HISTORY</span><span>WINDOW</span>
+    <span>PNR</span><span>SEARCH</span><span>SELL</span><span>TOOLS</span><span>HELP</span>
+  </nav>
   <main class="workspace">
+
     <section class="left-pane">
-      <div id="leftMessage">NO B.F. TO DISPLAY - CREATE OR RETRIEVE FIRST</div>
-      <div class="left-tools"><span>◢</span><span>⌕</span><span>✎</span><span>▣</span><span>⚙</span><span>↻</span><span>ᴀA</span><span>↗</span><span>FS+</span></div>
+      <div id="leftMessage" class="left-message">NO B.F. TO DISPLAY
+CREATE OR RETRIEVE FIRST</div>
+      <div id="leftButtons" class="left-btns" style="display:none">
+        <button class="left-btn" data-cmd="*ALL">*ALL</button>
+        <button class="left-btn" data-cmd="*RV">*RV</button>
+      </div>
+      <div class="left-tools">
+        <span title="Back">&#9698;</span>
+        <span title="Search">&#9741;</span>
+        <span title="Edit">&#9998;</span>
+        <span title="View">&#9635;</span>
+        <span title="Settings">&#9881;</span>
+        <span title="Refresh">&#8635;</span>
+        <span title="Font">&#7424;A</span>
+        <span title="Open">&#8599;</span>
+        <span title="Fullscreen">FS+</span>
+      </div>
     </section>
+
     <section class="terminal-wrap">
-      <div class="terminal-tabs"><span>1-&gt;</span><b>+</b></div>
-      <div class="terminal-head"><span id="sessionStatus">OFFLINE</span><span id="officeLabel">GALILEO TRAINING</span></div>
-      <div id="terminal" class="terminal" aria-live="polite"></div>
+      <div class="terminal-tabs">
+        <span id="tabLabel">1-&gt;</span>
+        <b class="tab-add" title="New terminal">+</b>
+      </div>
+      <div class="terminal-head">
+        <span id="sessionStatus">OFFLINE</span>
+        <span id="officeLabel">GALILEO TRAINING</span>
+      </div>
+      <div id="terminal" class="terminal" aria-live="polite" aria-label="Galileo terminal output"></div>
       <form id="commandForm" class="command-line">
-        <label for="commandInput">*</label><input id="commandInput" autocomplete="off" spellcheck="false" aria-label="Galileo command input">
-        <button type="submit">ENTER</button>
+        <label for="commandInput" class="prompt-star">*</label>
+        <input id="commandInput" type="text" autocomplete="off" spellcheck="false"
+               aria-label="Enter Galileo command">
+        <button type="submit" class="enter-btn" aria-label="Send command">ENTER</button>
       </form>
     </section>
+
     <aside class="details">
       <div class="detail-card">
         <div class="card-heading">CURRENT PNR <span id="locatorBadge">---</span></div>
@@ -34,13 +68,33 @@
       <div class="detail-card">
         <div class="card-heading">LESSON PROGRESS</div>
         <ol id="progress">
-          <li data-step="login">Sign in</li><li data-step="availability">Display availability</li><li data-step="sell">Sell segment</li><li data-step="name">Add passenger</li><li data-step="contact">Add contact</li><li data-step="save">End and retrieve</li><li data-step="price">Price PNR</li><li data-step="issue">Issue ticket</li>
+          <li data-step="login">Sign in</li>
+          <li data-step="availability">Display availability</li>
+          <li data-step="sell">Sell segment</li>
+          <li data-step="name">Add passenger</li>
+          <li data-step="contact">Add contact</li>
+          <li data-step="save">End &amp; retrieve</li>
+          <li data-step="price">Price PNR</li>
+          <li data-step="issue">Issue ticket</li>
         </ol>
       </div>
-      <div class="disclaimer">Educational simulator only. Not affiliated with or connected to Travelport or Galileo. No live GDS connection is used.</div>
+      <div class="disclaimer">Educational simulator only. Not affiliated with or connected to Travelport or Galileo&#174;. No live GDS connection.</div>
     </aside>
-    <div class="right-tools"><span>◉</span><span>♙</span><span>↻</span><b>SB</b><span>◈</span><span>□</span><em>TQ <b>0</b></em><span>MQ</span><span>QCT</span><span>P</span><span>O</span><strong>✈</strong><span>•••</span></div>
+
+    <div class="right-tools">
+      <span title="Queue">&#9673;</span>
+      <span title="Profiles">&#9817;</span>
+      <span title="Refresh">&#8635;</span>
+      <b title="SmartButton">SB</b>
+      <span title="Workflows">&#9672;</span>
+      <span title="Minimize">&#9633;</span>
+      <em title="Travel Queue">TQ <b>0</b></em>
+      <span>MQ</span><span>QCT</span><span>P</span><span>O</span>
+      <strong title="Flights">&#10004;</strong>
+      <span>&#8226;&#8226;&#8226;</span>
+    </div>
   </main>
+
   <script src="js/airports.js"></script>
   <script src="js/flights.js"></script>
   <script src="js/fareShop.js"></script>

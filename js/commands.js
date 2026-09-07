@@ -1,98 +1,383 @@
 (function (global) {
-  const steps = ["login", "availability", "sell", "name", "contact", "save", "price", "issue"];
 
-  function freshState() {
-    return { signedIn: false, availability: false, results: [], segment: null, name: null, phone: null, ticketing: null, receivedFrom: null, locator: null, priced: false, fare: null, storedFare: false, issued: false, saved: false, ssr: [], history: [] };
+  const STEPS = ["login","availability","sell","name","contact","save","price","issue"];
+
+  // Day abbreviations for date display
+  const DAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+
+  function dayOfDate(dateStr) {
+    // dateStr like "01APR" — use a fixed reference (01APR27 = THU)
+    const MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+    const d = parseInt(dateStr.slice(0,2));
+    const m = MONTHS[dateStr.slice(2,5)];
+    const dt = new Date(2027, m, d);
+    return DAYS[dt.getDay()];
   }
 
-  function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function freshState() {
+    return {
+      signedIn: false,
+      officeId: null,
+      availability: false,
+      availHeader: null,
+      results: [],
+      segments: [],          // array of sold segments (multi-segment support)
+      names: [],             // array of passenger names
+      phones: [],
+      ticketing: null,
+      receivedFrom: null,
+      locator: null,
+      priced: false,
+      fare: null,
+      storedFare: false,
+      issued: false,
+      saved: false,
+      ssr: [],
+      osk: [],               // OSI remarks
+      history: []
+    };
+  }
+
+  function clone(v) { return JSON.parse(JSON.stringify(v)); }
+
+  // Generate a random 6-char alphanumeric PNR locator
+  function genLocator() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return s;
+  }
+
+  // Build city names from airport codes
+  function cityPair(orig, dest) {
+    const a = GalileoAirports.find(orig);
+    const b = GalileoAirports.find(dest);
+    const ac = a ? a.city.toUpperCase() : orig;
+    const bc = b ? b.city.toUpperCase() : dest;
+    return `${ac}/${bc}`;
+  }
 
   class GalileoCommandEngine {
     constructor() { this.reset(); }
-
     reset() { this.state = freshState(); }
 
     process(raw) {
-      const command = raw.trim().toUpperCase();
-      if (!command) return { lines: [], kind: "" };
-      this.state.history.push(raw);
-      if (command === "HELP" || command === "GG HELP") return { lines: ["CORE TRAINING COMMANDS", "SON/AGENCY/PASSWORD  Sign in", "SOF                  Sign out", "A01APRDACJED         Display availability", "N1Y1                 Sell line 1, Y class, 1 passenger", "N/DOE/JOHN MR        Add passenger name", "9/8801712345678      Add contact", "T-01APR              Add ticketing time limit", "RF-JOHN              Received from", "ER                   End and retrieve PNR", "FQ / FXP             Quote and store fare", "TKPFS/DTDAD          Issue ticket", "X1                   Cancel segment 1", "SI.SSR MEAL          Add special service", "C DAC                Decode airport code", "IG                   Ignore unsaved booking"] };
-      if (command.startsWith("SON/")) { this.state.signedIn = true; return { lines: ["SIGN IN COMPLETE", "OFFICE ID: DACVS01  DUTY: TRAINING", "WELCOME TO GELLELIO GALILEO"] }; }
-      if (command === "SOF") { this.state.signedIn = false; return { lines: ["SIGN OFF COMPLETE"] }; }
-      if (!this.state.signedIn) return this.error("SIGN IN REQUIRED - ENTER SON/AGENCY/PASSWORD");
+      const cmd = raw.trim().toUpperCase();
+      if (!cmd) return { lines: [], kind: "" };
+      this.state.history.push(raw.trim());
 
-      const availability = command.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(?:\*([A-Z0-9]+))?$/);
-      if (availability) {
-        const [, date, origin, destination] = availability;
-        if (!GalileoAirports.find(origin) || !GalileoAirports.find(destination)) return this.error("INVALID AIRPORT CODE - USE C CODE TO VERIFY");
-        if (origin === destination) return this.error("ORIGIN AND DESTINATION MUST BE DIFFERENT");
-        this.state.results = GalileoFlights.search({ date, origin, destination });
+      // ── HELP ──
+      if (cmd === "HELP" || cmd === "GG HELP") {
+        return { lines: [
+          "GELLELIO GALILEO — CORE TRAINING COMMANDS",
+          "─────────────────────────────────────────",
+          "SON/AGENCY/PASSWORD     Sign in",
+          "SOF                     Sign out",
+          "A01APRDACJED            Display availability (date+orig+dest)",
+          "N1Y1                    Sell: line 1, class Y, 1 pax",
+          "N/SURNAME/FIRSTNAME MR  Add passenger name",
+          "9/MOBILE-BD/88017XXXXX  Add phone contact",
+          "T-01APR                 Ticketing time limit",
+          "RF-AGENTNAME            Received from",
+          "ER  or  E               End transaction (save PNR)",
+          "*LOCATOR                Retrieve PNR",
+          "*ALL                    Display all PNR elements",
+          "FQ                      Fare quote",
+          "FXP                     Store fare (create TST)",
+          "TKPFS/DTDAD             Issue e-ticket",
+          "X1                      Cancel segment 1",
+          "SI.SSR MEAL             Add special service",
+          "C DAC                   Decode airport code",
+          "IG                      Ignore (discard unsaved PNR)",
+          "LESSON BASIC            Show basic booking lesson steps",
+          "LESSON TICKETING        Show fare & ticketing lesson",
+          "LESSON MODIFICATION     Show modification lesson"
+        ]};
+      }
+
+      // ── SIGN IN: SON/AGENCY/PASSWORD ──
+      if (cmd.startsWith("SON/")) {
+        const parts = cmd.slice(4).split("/");
+        if (parts.length < 2) return this.error("FORMAT: SON/AGENCY/PASSWORD");
+        this.state.signedIn = true;
+        this.state.officeId = "DACVS086JJ";
+        return { lines: [
+          "SIGN IN COMPLETE",
+          `OFFICE ID  : ${this.state.officeId}`,
+          "DUTY CODE  : SU",
+          "TRAINING   : GELLELIO GALILEO PRACTICE SIMULATOR"
+        ]};
+      }
+
+      // ── SIGN OUT ──
+      if (cmd === "SOF") {
+        this.state.signedIn = false;
+        return { lines: ["SIGN OFF COMPLETE", `OFFICE: ${this.state.officeId || "DACVS086JJ"}`] };
+      }
+
+      if (!this.state.signedIn) return this.error("SIGN IN REQUIRED - ENTER: SON/AGENCY/PASSWORD");
+
+      // ── AVAILABILITY: A01APRDACJED ──
+      // Format: A + DDMMM + ORIG3 + DEST3 [+ optional *class]
+      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\*[A-Z])?$/);
+      if (avail) {
+        const [, dateStr, orig, dest] = avail;
+        const aOrig = GalileoAirports.find(orig);
+        const aDest = GalileoAirports.find(dest);
+        if (!aOrig) return this.error(`AIRPORT NOT FOUND - ${orig} - USE C CODE`);
+        if (!aDest) return this.error(`AIRPORT NOT FOUND - ${dest} - USE C CODE`);
+        if (orig === dest) return this.error("ORIGIN AND DESTINATION MUST DIFFER");
+
+        const results = GalileoFlights.search({ origin: orig, destination: dest });
+        this.state.results = results;
         this.state.availability = true;
-        if (!this.state.results.length) return { lines: [`NO FLIGHTS FOUND ${date} ${origin}${destination}`], kind: "error" };
-        return { lines: [`GALILEO AVAILABILITY - ${date} - ${origin}/${destination}`, ...this.state.results.map(GalileoFlights.format), "> SELL FORMAT: N1Y1"] };
+
+        if (!results.length) return { lines: [`NO AVAILABILITY - ${dateStr} ${orig}${dest}`], kind: "error" };
+
+        // Header: "THU 01APR27        DHAKA/JEDDAH        01/0000 01/2359"
+        const day  = dayOfDate(dateStr);
+        const yr   = "27";
+        const pair = cityPair(orig, dest);
+        const header = `${day} ${dateStr}${yr}        ${pair}        01/0000 01/2359`;
+        this.state.availHeader = header;
+
+        const lines = [header, ""];
+        results.forEach(f => {
+          lines.push(GalileoFlights.formatLine(f));
+          // second / third class rows
+          (f.rows || []).forEach(row => {
+            lines.push(`${"".padStart(38,' ')}${row}`);
+          });
+          // «B» continuation marker (if flight is from DAC with «B»)
+          if (f.origin === orig) lines.push("  \u00abB\u00bb");
+          lines.push("");
+        });
+
+        // After last visible page add «More Flights» hint
+        lines.push("\u00abMore Flights\u00bb");
+        lines.push("");
+        lines.push("> SELL FORMAT: N1Y1  (line number, class, pax count)");
+
+        return { lines, kind: "avail" };
       }
-      const sell = command.match(/^N(\d+)([A-Z])(\d+)$/);
+
+      // ── SELL: N1Y1, N1J2, N2B1 ──
+      const sell = cmd.match(/^N(\d+)([A-Z])(\d+)$/);
       if (sell) {
-        const flight = GalileoFlights.byLine(Number(sell[1]), this.state.results);
-        if (!this.state.availability || !flight) return this.error("NEED A VALID AVAILABILITY LINE FIRST");
-        this.state.segment = clone(flight);
-        return { lines: ["SELL CONFIRMED", `${flight.line} ${flight.carrier}${flight.number} ${flight.cls} HK${sell[3]} ${flight.origin}${flight.destination} ${flight.date}`] };
+        const lineNum = parseInt(sell[1]);
+        const cls     = sell[2];
+        const paxCount = parseInt(sell[3]);
+        if (!this.state.availability || !this.state.results.length)
+          return this.error("DISPLAY AVAILABILITY FIRST - ENTER: A01APRDACJED");
+        const flight = GalileoFlights.byLine(lineNum, this.state.results);
+        if (!flight) return this.error(`LINE ${lineNum} NOT FOUND IN AVAILABILITY`);
+
+        const seg = clone(flight);
+        seg.soldClass = cls;
+        seg.paxCount  = paxCount;
+        seg.segNum    = this.state.segments.length + 1;
+        this.state.segments.push(seg);
+
+        // Left pane content is built from segment notes
+        return {
+          lines: [
+            `${seg.segNum} ${seg.carrier} ${seg.number} ${cls} ${seg.date} ${seg.origin}${seg.destination} HS${paxCount} ${seg.depart} ${seg.arrive} O  ${dayOfDate(seg.date)}`
+          ],
+          kind: "sell",
+          leftPaneNotes: seg.notes || [],
+          segment: seg
+        };
       }
-      if (command.startsWith("C ")) {
-        const decoded = GalileoAirports.decode(command.slice(2));
-        return decoded ? { lines: [`${decoded.code}  ${decoded.city}`, decoded.country] } : this.error("AIRPORT CODE NOT FOUND");
+
+      // ── DECODE: C DAC ──
+      if (cmd.startsWith("C ")) {
+        const code = cmd.slice(2).trim();
+        const ap = GalileoAirports.decode(code);
+        if (ap) return { lines: [`${ap.code}  ${ap.city}`, ap.country, ap.name] };
+        // Try encode (city name search)
+        const enc = GalileoAirports.encode(code);
+        if (enc.length) return { lines: enc.map(([c,a]) => `${c}  ${a.city}, ${a.country}  ${a.name}`).slice(0,8) };
+        return this.error("CODE NOT FOUND");
       }
-      if (command.startsWith("N/")) {
-        const value = command.slice(2);
-        if (!value.includes("/")) return this.error("FORMAT ERROR - USE N/SURNAME/FIRSTNAME TITLE");
-        this.state.name = value;
-        return { lines: [`NAME ADDED - ${value}`] };
+
+      // ── NAME: N/SURNAME/FIRSTNAME TITLE ──
+      if (cmd.startsWith("N/")) {
+        const val = raw.trim().slice(2); // preserve original case for name
+        if (!val.includes("/")) return this.error("FORMAT: N/SURNAME/FIRSTNAME TITLE");
+        const nameFormatted = `1-N/${val.toUpperCase()}`;
+        this.state.names.push(nameFormatted);
+        return { lines: [`${nameFormatted}`], kind: "" };
       }
-      if (command.startsWith("9/")) { this.state.phone = command.slice(2); return { lines: [`CONTACT ADDED - ${this.state.phone}`] }; }
-      if (command.startsWith("T-")) { this.state.ticketing = command.slice(2); return { lines: [`TICKETING TIME LIMIT SET - ${this.state.ticketing}`] }; }
-      if (command.startsWith("RF-")) { this.state.receivedFrom = command.slice(3); return { lines: [`RECEIVED FROM - ${this.state.receivedFrom}`] }; }
-      if (command === "ER" || command === "E") {
-        if (!this.state.segment || !this.state.name) return this.error("UNABLE TO END - NAME AND SEGMENT REQUIRED");
-        this.state.saved = true;
-        this.state.locator = "G7L3QK";
-        return { lines: [`PNR CREATED - ${this.state.locator}`, this.state.name, `${this.state.segment.carrier}${this.state.segment.number} HK1 ${this.state.segment.origin}${this.state.segment.destination}`] };
+
+      // ── PHONE: 9/MOBILE-BD/88017XXXXXXX or 9/88017XXXXXXX ──
+      if (cmd.startsWith("9/")) {
+        const phone = cmd.slice(2);
+        this.state.phones.push(phone);
+        return { lines: [`PHONE-${phone}`] };
       }
-      if (command.startsWith("*")) {
-        if (command.slice(1) !== this.state.locator) return this.error("RECORD NOT FOUND");
-        return { lines: [`RETRIEVED PNR ${this.state.locator}`, this.state.name || "NO NAME", this.state.segment ? `${this.state.segment.carrier}${this.state.segment.number} HK1 ${this.state.segment.origin}${this.state.segment.destination}` : "NO AIR SEGMENT"] };
+
+      // ── TICKETING TL: T-01APR ──
+      if (cmd.startsWith("T-")) {
+        this.state.ticketing = cmd.slice(2);
+        return { lines: [`TL ${this.state.ticketing}`] };
       }
-      if (command === "FQ") {
-        if (!this.state.segment) return this.error("NO AIR SEGMENT TO QUOTE");
-        this.state.fare = GalileoFareShop.quote(this.state.segment);
+
+      // ── RECEIVED FROM: RF-NAME ──
+      if (cmd.startsWith("RF-")) {
+        this.state.receivedFrom = raw.trim().slice(3);
+        return { lines: [`RF-${this.state.receivedFrom.toUpperCase()}`] };
+      }
+
+      // ── END & RETRIEVE: ER or E ──
+      if (cmd === "ER" || cmd === "E") {
+        if (!this.state.segments.length) return this.error("NO SEGMENT - ADD AIR SEGMENT FIRST");
+        if (!this.state.names.length)    return this.error("NO PASSENGER NAME - ADD WITH N/SURNAME/FIRSTNAME TITLE");
+        this.state.saved   = true;
+        this.state.locator = genLocator();
+        const seg  = this.state.segments[0];
+        const name = this.state.names[0];
+        return { lines: [
+          `--- RLR ---`,
+          `RP/${this.state.officeId || "DACVS086JJ"}/${this.state.officeId || "DACVS086JJ"}              ${this.state.receivedFrom || "TRAINING"}/SU`,
+          `${this.state.locator}`,
+          `${name}`,
+          `${seg.segNum} ${seg.carrier} ${seg.number} ${seg.soldClass} ${seg.date} ${seg.origin}${seg.destination} HK${seg.paxCount} ${seg.depart} ${seg.arrive}   #`,
+          this.state.ticketing ? `TL ${this.state.ticketing}` : "",
+          this.state.phones.length ? `AP ${this.state.phones[0]}` : ""
+        ].filter(l => l !== "") };
+      }
+
+      // ── RETRIEVE PNR: *LOCATOR ──
+      if (cmd.startsWith("*") && !cmd.startsWith("*ALL") && !cmd.startsWith("*RV")) {
+        const loc = cmd.slice(1);
+        if (loc !== this.state.locator) return this.error(`RECORD LOCATOR ${loc} NOT FOUND`);
+        return this._displayPNR();
+      }
+
+      // ── *ALL: display full PNR ──
+      if (cmd === "*ALL") {
+        if (!this.state.locator) return this.error("NO ACTIVE PNR - RETRIEVE FIRST");
+        return this._displayPNR();
+      }
+
+      // ── *RV: re-display (same as retrieve) ──
+      if (cmd === "*RV") {
+        if (!this.state.locator) return this.error("NO ACTIVE PNR");
+        return this._displayPNR();
+      }
+
+      // ── FARE QUOTE: FQ ──
+      if (cmd === "FQ") {
+        if (!this.state.segments.length) return this.error("NO AIR SEGMENT TO QUOTE");
+        const seg  = this.state.segments[0];
+        const fare = GalileoFareShop.quote(seg);
+        this.state.fare   = fare;
         this.state.priced = true;
-        return { lines: ["FARE QUOTE", `${this.state.segment.origin}-${this.state.segment.destination}  ${this.state.segment.carrier}${this.state.segment.number}`, `BASE FARE                 ${this.state.fare.currency} ${this.state.fare.base.toLocaleString()}`, `TAXES                     ${this.state.fare.currency} ${this.state.fare.taxes.toLocaleString()}`, `TOTAL                     ${this.state.fare.currency} ${this.state.fare.total.toLocaleString()}`] };
+        return { lines: [
+          `DAC ${seg.origin}-${seg.destination}  ${seg.carrier}${seg.number}/${seg.soldClass || "Y"}  ${seg.date}`,
+          ``,
+          `  FARE BASIS : ${fare.reference}`,
+          `  BASE FARE  : BDT ${fare.base.toLocaleString()}`,
+          `  TAXES/FEES : BDT ${fare.taxes.toLocaleString()}`,
+          `  ─────────────────────────────────`,
+          `  TOTAL      : BDT ${fare.total.toLocaleString()}`,
+          ``,
+          `LAST DAY TO PURCHASE: ${this.state.ticketing || "SEE CONDITIONS"}`,
+          `ENTER FXP TO STORE FARE`
+        ]};
       }
-      if (command === "FXP") {
-        if (!this.state.priced) return this.error("FARE QUOTE REQUIRED - ENTER FQ FIRST");
+
+      // ── FXP: store fare / create TST ──
+      if (cmd === "FXP") {
+        if (!this.state.priced) return this.error("FARE NOT QUOTED - ENTER FQ FIRST");
         this.state.storedFare = true;
-        return { lines: ["FARE STORED - TST 00001 CREATED"] };
+        return { lines: [
+          "TST 00001 CREATED",
+          `BDT ${this.state.fare.total.toLocaleString()}`,
+          "ENTER TKPFS/DTDAD TO ISSUE TICKET"
+        ]};
       }
-      if (command.startsWith("TKP")) {
-        if (!this.state.storedFare || !this.state.saved) return this.error("PNR MUST BE SAVED AND FARE STORED BEFORE ISSUE");
+
+      // ── ISSUE TICKET: TKPFS/DTDAD or TKP... ──
+      if (cmd.startsWith("TKP") || cmd.startsWith("TKPFS")) {
+        if (!this.state.storedFare) return this.error("STORE FARE FIRST - ENTER FXP");
+        if (!this.state.saved)      return this.error("SAVE PNR FIRST - ENTER ER");
         this.state.issued = true;
-        return { lines: ["TICKET ISSUED SUCCESSFULLY", "TICKET NUMBER: 999-1234567890", `PNR: ${this.state.locator}`, "STATUS: CONFIRMED"] };
+        const tktNum = `233-${Math.floor(1000000000 + Math.random()*9000000000)}`;
+        return { lines: [
+          "ETK ISSUED OK",
+          `TICKET NO : ${tktNum}`,
+          `PNR       : ${this.state.locator}`,
+          `PAX       : ${this.state.names[0] || "PASSENGER"}`,
+          `FARE      : BDT ${this.state.fare ? this.state.fare.total.toLocaleString() : "0"}`,
+          "STATUS    : CONFIRMED"
+        ]};
       }
-      const cancel = command.match(/^X(\d+)$/);
-      if (cancel) {
-        if (!this.state.segment || Number(cancel[1]) !== 1) return this.error("SEGMENT NOT FOUND");
-        this.state.segment = null;
-        this.state.priced = false;
+
+      // ── CANCEL SEGMENT: X1 ──
+      const xseg = cmd.match(/^X(\d+)$/);
+      if (xseg) {
+        const segN = parseInt(xseg[1]);
+        const idx  = this.state.segments.findIndex(s => s.segNum === segN);
+        if (idx === -1) return this.error(`SEGMENT ${segN} NOT FOUND`);
+        this.state.segments.splice(idx, 1);
+        this.state.priced     = false;
         this.state.storedFare = false;
-        return { lines: ["SEGMENT 1 CANCELLED"] };
+        return { lines: [`SEGMENT ${segN} CANCELLED`] };
       }
-      if (command.startsWith("SI.SSR ")) { this.state.ssr.push(command.slice(7)); return { lines: [`SSR ADDED - ${command.slice(7)}`] }; }
-      if (command === "IG") { this.reset(); return { lines: ["PNR IGNORED - CHANGES DISCARDED"] }; }
-      return this.error("UNABLE TO PROCESS - TYPE HELP FOR COMMANDS");
+
+      // ── SSR: SI.SSR MEAL, SI.SSR WCHR, etc. ──
+      if (cmd.startsWith("SI.SSR ") || cmd.startsWith("SSR ")) {
+        const ssrVal = cmd.startsWith("SI.SSR ") ? cmd.slice(7) : cmd.slice(4);
+        this.state.ssr.push(ssrVal);
+        return { lines: [`SSR ${ssrVal} ADDED`] };
+      }
+
+      // ── OSI ──
+      if (cmd.startsWith("SI.OSI ") || cmd.startsWith("OSI ")) {
+        const osiVal = cmd.startsWith("SI.OSI ") ? cmd.slice(7) : cmd.slice(4);
+        this.state.osk.push(osiVal);
+        return { lines: [`OSI ${osiVal} ADDED`] };
+      }
+
+      // ── IGNORE: IG ──
+      if (cmd === "IG") {
+        this.reset();
+        return { lines: ["IGNORED - CHANGES DISCARDED"] };
+      }
+
+      return this.error("UNABLE TO PROCESS - TYPE HELP FOR AVAILABLE COMMANDS");
     }
 
-    error(line) { return { lines: [line], kind: "error" }; }
+    // Build full PNR display
+    _displayPNR() {
+      const s = this.state;
+      const lines = [
+        `--- RLR ---`,
+        `RP/${s.officeId || "DACVS086JJ"}/${s.officeId || "DACVS086JJ"}              ${s.receivedFrom || "TRAINING"}/SU`,
+        s.locator,
+        ""
+      ];
+      s.names.forEach(n => lines.push(n));
+      s.segments.forEach(seg => {
+        lines.push(`${seg.segNum} ${seg.carrier} ${seg.number} ${seg.soldClass || "Y"} ${seg.date} ${seg.origin}${seg.destination} HK${seg.paxCount} ${seg.depart} ${seg.arrive}   #`);
+      });
+      if (s.ticketing) lines.push(`TL ${s.ticketing}`);
+      s.phones.forEach(p => lines.push(`AP ${p}`));
+      if (s.receivedFrom) lines.push(`RF-${s.receivedFrom.toUpperCase()}`);
+      s.ssr.forEach(r => lines.push(`SSR ${r}`));
+      s.osk.forEach(r => lines.push(`OSI ${r}`));
+      if (s.storedFare && s.fare) {
+        lines.push("");
+        lines.push(`TST BDT ${s.fare.total.toLocaleString()}`);
+      }
+      if (s.issued) lines.push("TKT - ISSUED");
+      return { lines };
+    }
+
+    error(msg) { return { lines: [msg], kind: "error" }; }
   }
 
   global.GalileoCommandEngine = GalileoCommandEngine;
-  global.GalileoSteps = steps;
+  global.GalileoSteps = STEPS;
 }(window));
