@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Electron build output
+dist/
+*.asar
+
+# Android and Gradle generated files
+**/.gradle/
+**/build/
+local.properties
+
+# IDE metadata
+.idea/
+.vscode/
+
+# Packaged installers and APKs
+*.apk
+*.aab
+*.exe
+*.blockmap
+
+# Logs and local environment files
+*.log
+.env
+.env.*
