@@ -51,13 +51,13 @@ CREATE OR RETRIEVE FIRST</div>
         <span id="sessionStatus">OFFLINE</span>
         <span id="officeLabel">GALILEO TRAINING</span>
       </div>
-      <div id="terminal" class="terminal" aria-live="polite" aria-label="Galileo terminal output"></div>
       <form id="commandForm" class="command-line">
-        <label for="commandInput" class="prompt-star">*</label>
+        <label for="commandInput" class="prompt-gt">&gt;</label>
         <input id="commandInput" type="text" autocomplete="off" spellcheck="false"
                aria-label="Enter Galileo command">
-        <button type="submit" class="enter-btn" aria-label="Send command">ENTER</button>
       </form>
+      <div id="terminal" class="terminal" aria-live="polite" aria-label="Galileo terminal output"></div>
+      <div id="flightTip" class="gds-tip" hidden></div>
     </section>
 
     <aside class="details">

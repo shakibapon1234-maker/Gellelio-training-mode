@@ -84,9 +84,13 @@ html, body {
 /* ── Main workspace ── */
 .workspace {
   height: calc(100vh - 68px);
+  max-height: calc(100vh - 68px);
   display: grid;
-  grid-template-columns: 45% 1fr;
+  grid-template-columns: minmax(240px, 45%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   position: relative;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* ── LEFT PANE ── */
@@ -97,6 +101,8 @@ html, body {
   position: relative;
   border-right: 8px solid #e0e0e0;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
 .left-message {
@@ -159,6 +165,9 @@ html, body {
   flex-direction: column;
   background: #000;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
   /* leave room for right-tools bar */
   margin-right: 70px;
 }
@@ -192,22 +201,25 @@ html, body {
 /* Hidden head — used only for session/office info (not visible on screen) */
 .terminal-head { height: 0; overflow: hidden; }
 
-/* Terminal output area */
+/* Terminal output area — must shrink so the > prompt stays on screen */
 .terminal {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   background: #000;
   color: #e0e0e0;
-  padding: 8px 10px;
+  padding: 4px 8px 10px;
   overflow-y: auto;
-  overflow-x: hidden;
-  font: 13px/1.35 Consolas, monospace;
+  overflow-x: auto;
+  font: 13px/1.32 Consolas, monospace;
+  user-select: text;
   scrollbar-width: thin;
-  scrollbar-color: #333 #000;
+  scrollbar-color: #6a6a6a #111;
 }
 
-.terminal::-webkit-scrollbar { width: 6px; }
-.terminal::-webkit-scrollbar-track { background: #000; }
-.terminal::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+.terminal::-webkit-scrollbar { width: 8px; }
+.terminal::-webkit-scrollbar-track { background: #111; }
+.terminal::-webkit-scrollbar-thumb { background: #6a6a6a; border-radius: 2px; }
+.terminal::-webkit-scrollbar-thumb:hover { background: #8a8a8a; }
 
 /* Output lines */
 .output {
@@ -222,23 +234,68 @@ html, body {
 .output.error { color: #ff6b6b; }
 .output.avail { color: #e0e0e0; }   /* availability display */
 .output.sell  { color: #7ec8e3; }   /* sold segment confirmation */
+.output.avail-header { color: #e8e8e8; margin-bottom: 4px; }
 
-/* Command input row */
+.avail-block { margin: 0; }
+.avail-line {
+  font: 13px/1.32 Consolas, monospace;
+  white-space: pre;
+  color: #e8e8e8;
+}
+.gds-ln { color: #e8e8e8; }
+.gds-city { color: #4ea3ff; }
+.gds-time { color: #e8e8e8; }
+.gds-al { color: #4ea3ff; }
+.gds-fn { color: #4ea3ff; }
+.gds-cls { color: #6fdf6f; }
+.gds-eq { color: #e8e8e8; }
+.gds-flag { color: #c8c8c8; }
+.gds-row2 { color: #9a9a9a; }
+.gds-b, .gds-more {
+  color: #3cff7a;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font: 13px/1.32 Consolas, monospace;
+  padding: 0;
+}
+.gds-b:hover, .gds-more:hover { text-decoration: underline; }
+
+.gds-tip {
+  position: absolute;
+  left: 24px;
+  top: 72px;
+  background: #f3f3f3;
+  color: #111;
+  border: 1px solid #777;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.45);
+  padding: 8px 10px;
+  font: 12px/1.45 Consolas, monospace;
+  white-space: pre-wrap;
+  max-width: 420px;
+  z-index: 30;
+  pointer-events: none;
+}
+
+/* ── RIGHT SIDEBAR (details) kept out of the 2-pane Smartpoint grid ── */
+
+/* Command input — Smartpoint keeps > at the TOP of the right pane */
 .command-line {
-  height: 32px;
+  height: 26px;
   background: #000;
   display: flex;
   align-items: center;
-  padding: 0 10px;
-  border-top: 1px solid #222;
+  padding: 2px 8px 0;
   flex-shrink: 0;
+  user-select: text;
 }
 
-.prompt-star {
-  color: #e0e0e0;
-  font: 18px Consolas, monospace;
-  margin-right: 6px;
+.prompt-gt {
+  color: #ffe14d;
+  font: 14px/1 Consolas, monospace;
+  margin-right: 4px;
   flex-shrink: 0;
+  cursor: text;
 }
 
 #commandInput {
@@ -252,28 +309,9 @@ html, body {
   user-select: text;
 }
 
-.enter-btn {
-  background: #1e2d3a;
-  color: #7ec8e3;
-  border: 1px solid #2b9ed0;
-  font: 11px Consolas, monospace;
-  padding: 2px 10px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.enter-btn:hover { background: #2b9ed0; color: #000; }
-
 /* ── RIGHT SIDEBAR (details) ── */
 .details {
-  display: none;   /* hidden by default; shown on wider screens */
-  flex-direction: column;
-  background: #12191f;
-  border-left: 1px solid #333;
-  padding: 10px;
-  font-size: 11px;
-  overflow-y: auto;
-  min-width: 160px;
-  max-width: 200px;
+  display: none;
 }
 
 .detail-card {
@@ -366,7 +404,6 @@ html, body {
 
 /* ── Responsive ── */
 @media (min-width: 960px) {
-  .details { display: flex; }
   .terminal-wrap { margin-right: 70px; }
 }
 

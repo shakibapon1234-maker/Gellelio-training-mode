@@ -34,7 +34,9 @@
       saved: false,
       ssr: [],
       osk: [],               // OSI remarks
-      history: []
+      history: [],
+      availPage: 0,
+      lastAvailCmd: null
     };
   }
 
@@ -74,6 +76,7 @@
           "SON/AGENCY/PASSWORD     Sign in",
           "SOF                     Sign out",
           "A01APRDACJED            Display availability (date+orig+dest)",
+          "MD  / MU / MT / MB      Move down / up / top / bottom",
           "N1Y1                    Sell: line 1, class Y, 1 pax",
           "N/SURNAME/FIRSTNAME MR  Add passenger name",
           "9/MOBILE-BD/88017XXXXX  Add phone contact",
@@ -117,48 +120,45 @@
 
       if (!this.state.signedIn) return this.error("SIGN IN REQUIRED - ENTER: SON/AGENCY/PASSWORD");
 
-      // ── AVAILABILITY: A01APRDACJED ──
-      // Format: A + DDMMM + ORIG3 + DEST3 [+ optional *class]
-      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\*[A-Z])?$/);
+      // ── MOVE DISPLAY (availability paging) ──
+      if (cmd === "MD" || cmd === "MU" || cmd === "MT" || cmd === "MB") {
+        if (!this.state.results.length) return this.error("NO AVAILABILITY DISPLAYED");
+        const size = GalileoCommandEngine.PAGE_SIZE;
+        const maxPage = Math.max(0, Math.ceil(this.state.results.length / size) - 1);
+        if (cmd === "MD") {
+          if (this.state.availPage >= maxPage) return this.error("BOTTOM OF DISPLAY");
+          this.state.availPage++;
+        } else if (cmd === "MU") {
+          if (this.state.availPage <= 0) return this.error("TOP OF DISPLAY");
+          this.state.availPage--;
+        } else if (cmd === "MT") this.state.availPage = 0;
+        else this.state.availPage = maxPage;
+        return this._availScreen();
+      }
+
+      // ── AVAILABILITY: A01APRDACJED or A01APRDACJED*SV ──
+      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\*[A-Z]{1,3})?$/);
       if (avail) {
-        const [, dateStr, orig, dest] = avail;
+        const [, dateStr, orig, dest, pref] = avail;
         const aOrig = GalileoAirports.find(orig);
         const aDest = GalileoAirports.find(dest);
         if (!aOrig) return this.error(`AIRPORT NOT FOUND - ${orig} - USE C CODE`);
         if (!aDest) return this.error(`AIRPORT NOT FOUND - ${dest} - USE C CODE`);
         if (orig === dest) return this.error("ORIGIN AND DESTINATION MUST DIFFER");
 
-        const results = GalileoFlights.search({ origin: orig, destination: dest });
+        const carrier = pref && pref.length === 3 ? pref.slice(1) : null;
+        const results = GalileoFlights.search({ origin: orig, destination: dest, carrier: carrier });
         this.state.results = results;
         this.state.availability = true;
+        this.state.availPage = 0;
+        this.state.lastAvailCmd = cmd;
 
         if (!results.length) return { lines: [`NO AVAILABILITY - ${dateStr} ${orig}${dest}`], kind: "error" };
 
-        // Header: "THU 01APR27        DHAKA/JEDDAH        01/0000 01/2359"
         const day  = dayOfDate(dateStr);
-        const yr   = "27";
         const pair = cityPair(orig, dest);
-        const header = `${day} ${dateStr}${yr}        ${pair}        01/0000 01/2359`;
-        this.state.availHeader = header;
-
-        const lines = [header, ""];
-        results.forEach(f => {
-          lines.push(GalileoFlights.formatLine(f));
-          // second / third class rows
-          (f.rows || []).forEach(row => {
-            lines.push(`${"".padStart(38,' ')}${row}`);
-          });
-          // «B» continuation marker (if flight is from DAC with «B»)
-          if (f.origin === orig) lines.push("  \u00abB\u00bb");
-          lines.push("");
-        });
-
-        // After last visible page add «More Flights» hint
-        lines.push("\u00abMore Flights\u00bb");
-        lines.push("");
-        lines.push("> SELL FORMAT: N1Y1  (line number, class, pax count)");
-
-        return { lines, kind: "avail" };
+        this.state.availHeader = `${day} ${dateStr}27        ${pair}        01/0000 01/2359`;
+        return this._availScreen();
       }
 
       // ── SELL: N1Y1, N1J2, N2B1 ──
@@ -342,7 +342,13 @@
 
       // ── IGNORE: IG ──
       if (cmd === "IG") {
+        const signedIn = this.state.signedIn;
+        const officeId = this.state.officeId;
+        const history = this.state.history;
         this.reset();
+        this.state.signedIn = signedIn;
+        this.state.officeId = officeId;
+        this.state.history = history;
         return { lines: ["IGNORED - CHANGES DISCARDED"] };
       }
 
@@ -375,8 +381,30 @@
       return { lines };
     }
 
+    _availScreen() {
+      const size = GalileoCommandEngine.PAGE_SIZE;
+      const start = (this.state.availPage || 0) * size;
+      const flights = this.state.results.slice(start, start + size);
+      const hasMore = start + size < this.state.results.length;
+      const lines = [this.state.availHeader];
+      flights.forEach(f => {
+        lines.push(GalileoFlights.formatLine(f));
+        (f.rows || []).forEach(row => lines.push("  \u00abB\u00bb  " + row));
+      });
+      if (hasMore) lines.push("\u00abMore Flights\u00bb");
+      return {
+        lines,
+        kind: "avail",
+        header: this.state.availHeader,
+        flights,
+        hasMore
+      };
+    }
+
     error(msg) { return { lines: [msg], kind: "error" }; }
   }
+
+  GalileoCommandEngine.PAGE_SIZE = 8;
 
   global.GalileoCommandEngine = GalileoCommandEngine;
   global.GalileoSteps = STEPS;

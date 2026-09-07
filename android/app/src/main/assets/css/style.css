@@ -1,1 +1,416 @@
-:root{--black:#000;--bar:#111a20;--green:#e6e6e6}*{box-sizing:border-box}body{margin:0;height:100vh;background:#fff;color:#ddd;font-family:Arial,sans-serif;overflow:hidden}.topbar{height:43px;background:#101820;border-bottom:2px solid #ddd;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:13px}.window-title{display:flex;align-items:center;gap:7px}.title-icon{display:grid;place-items:center;background:#d9d9d9;color:#17232b;border-radius:50%;width:21px;height:21px;font-weight:bold}.window-controls{display:flex;align-items:center;gap:10px;color:#ddd;font:11px Consolas}.window-controls b{border:1px solid #2b9ed0;color:#48b5ec;padding:2px 4px;font-weight:normal}.window-controls i{font-style:normal;font-size:17px}.menu-bar{height:28px;background:#fff;color:#3f3f3f;padding-left:47%;display:flex;gap:14px;align-items:center;font-size:10px}.workspace{height:calc(100vh - 71px);display:grid;grid-template-columns:46% 54%;padding:0;position:relative}.left-pane{background:#000;position:relative;font:14px Consolas;color:#eee}.left-pane>div:first-child{padding:35px 12px}.left-tools{position:absolute;bottom:0;left:0;width:100%;height:48px;background:#d5d5d5;color:#777;display:flex;align-items:center;justify-content:space-around;font-size:22px}.terminal-wrap{display:flex;flex-direction:column;background:#000;border-left:8px solid #fff;min-width:0}.terminal-tabs{height:27px;background:#fff;color:#555;font:11px Arial;padding:6px}.terminal-tabs b{font-size:20px;color:#aaa;margin-left:15px}.terminal-head{height:0;overflow:hidden}.terminal{flex:1;background:#000;color:#eee;padding:8px 7px;overflow:auto;font:14px/1.35 Consolas,monospace}.output{white-space:pre-wrap;margin:0 0 7px}.output.dim{color:#eee}.output.error{color:#ff9191}.command-line{height:31px;background:#000;display:flex;align-items:center;padding:0 8px;border-top:0}.command-line label{color:#ddd;font:17px Consolas;margin-right:5px}.command-line input{flex:1;background:#000;border:0;outline:0;color:#dfff00;font:14px Consolas}.command-line button{display:none}.details{display:none}.right-tools{position:absolute;right:0;top:30px;width:72px;height:calc(100% - 30px);background:#fff;color:#888;display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:12px;font-size:20px}.right-tools b{font-size:15px}.right-tools em{font-style:normal;margin-top:auto;background:#ddd;color:#777;font-size:10px;padding:2px}.right-tools em b{background:#f66;color:#fff;padding:3px}.right-tools strong{background:#2a9dbd;color:#fff;border-radius:50%;padding:4px;font-size:13px}.right-tools span:nth-last-child(-n+5){font-size:11px;background:#ddd;width:45px;text-align:center;padding:3px}@media(max-width:620px){.menu-bar{padding-left:5px;gap:7px;font-size:8px}.workspace{grid-template-columns:1fr}.left-pane{display:none}.terminal-wrap{border:0}.right-tools{display:none}}
+﻿/* ============================================================
+   Gellelio Galileo Training Simulator — CSS
+   Visual target: Travelport Smartpoint terminal (dark UI)
+   ============================================================ */
+
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #0d1117;
+  color: #d4d4d4;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Top bar (title + controls) ── */
+.topbar {
+  height: 42px;
+  background: #101820;
+  border-bottom: 2px solid #c8c8c8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 12px;
+  color: #ccc;
+  flex-shrink: 0;
+}
+
+.window-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.title-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  background: #d0d0d0;
+  color: #17232b;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.ctrl-tab  { color: #bbb; font-size: 11px; }
+.ctrl-office  { color: #aaa; border: 1px solid #555; padding: 1px 4px; }
+.ctrl-office2 { color: #aaa; }
+.ctrl-on   { color: #48b5ec; border: 1px solid #2b9ed0; padding: 1px 5px; font-weight: normal; font-size: 11px; }
+.ctrl-btn  { font-style: normal; font-size: 16px; cursor: pointer; color: #aaa; padding: 0 3px; }
+.ctrl-btn:hover { color: #fff; }
+.ctrl-btn.close:hover { color: #ff5555; }
+
+/* ── Menu bar ── */
+.menu-bar {
+  height: 26px;
+  background: #f0f0f0;
+  color: #333;
+  padding-left: 48%;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+  flex-shrink: 0;
+}
+
+.menu-bar span { cursor: pointer; white-space: nowrap; }
+.menu-bar span:hover { text-decoration: underline; }
+
+/* ── Main workspace ── */
+.workspace {
+  height: calc(100vh - 68px);
+  max-height: calc(100vh - 68px);
+  display: grid;
+  grid-template-columns: minmax(240px, 45%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── LEFT PANE ── */
+.left-pane {
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border-right: 8px solid #e0e0e0;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+}
+
+.left-message {
+  flex: 1;
+  padding: 30px 14px 14px;
+  font: 13px/1.5 Consolas, monospace;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  overflow-y: auto;
+}
+
+/* *ALL and *RV buttons */
+.left-btns {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #000;
+}
+
+.left-btn {
+  background: #1a1a1a;
+  color: #d4d4d4;
+  border: 1px solid #555;
+  font: 13px Consolas, monospace;
+  padding: 4px 14px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+}
+
+.left-btn:hover {
+  background: #2a2a2a;
+  border-color: #888;
+  color: #fff;
+}
+
+.left-btn:active {
+  background: #48b5ec;
+  color: #000;
+}
+
+/* Bottom toolbar row */
+.left-tools {
+  height: 46px;
+  background: #d0d0d0;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  font-size: 19px;
+  border-top: 1px solid #bbb;
+  flex-shrink: 0;
+}
+
+.left-tools span { cursor: pointer; }
+.left-tools span:hover { color: #222; }
+
+/* ── TERMINAL WRAP ── */
+.terminal-wrap {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  /* leave room for right-tools bar */
+  margin-right: 70px;
+}
+
+/* Tab row */
+.terminal-tabs {
+  height: 26px;
+  background: #e8e8e8;
+  color: #444;
+  font: 11px Arial, sans-serif;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#tabLabel {
+  background: #fff;
+  border: 1px solid #aaa;
+  border-bottom: none;
+  padding: 2px 8px;
+  font: 11px Consolas, monospace;
+  color: #222;
+  min-width: 50px;
+}
+
+.tab-add { font-size: 18px; color: #999; cursor: pointer; margin-left: 6px; }
+.tab-add:hover { color: #333; }
+
+/* Hidden head — used only for session/office info (not visible on screen) */
+.terminal-head { height: 0; overflow: hidden; }
+
+/* Terminal output area — must shrink so the > prompt stays on screen */
+.terminal {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #000;
+  color: #e0e0e0;
+  padding: 4px 8px 10px;
+  overflow-y: auto;
+  overflow-x: auto;
+  font: 13px/1.32 Consolas, monospace;
+  user-select: text;
+  scrollbar-width: thin;
+  scrollbar-color: #6a6a6a #111;
+}
+
+.terminal::-webkit-scrollbar { width: 8px; }
+.terminal::-webkit-scrollbar-track { background: #111; }
+.terminal::-webkit-scrollbar-thumb { background: #6a6a6a; border-radius: 2px; }
+.terminal::-webkit-scrollbar-thumb:hover { background: #8a8a8a; }
+
+/* Output lines */
+.output {
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0 0 2px;
+  line-height: 1.35;
+}
+
+.output.echo  { color: #dfff00; }   /* command echo — bright yellow */
+.output.dim   { color: #888; }
+.output.error { color: #ff6b6b; }
+.output.avail { color: #e0e0e0; }   /* availability display */
+.output.sell  { color: #7ec8e3; }   /* sold segment confirmation */
+.output.avail-header { color: #e8e8e8; margin-bottom: 4px; }
+
+.avail-block { margin: 0; }
+.avail-line {
+  font: 13px/1.32 Consolas, monospace;
+  white-space: pre;
+  color: #e8e8e8;
+}
+.gds-ln { color: #e8e8e8; }
+.gds-city { color: #4ea3ff; }
+.gds-time { color: #e8e8e8; }
+.gds-al { color: #4ea3ff; }
+.gds-fn { color: #4ea3ff; }
+.gds-cls { color: #6fdf6f; }
+.gds-eq { color: #e8e8e8; }
+.gds-flag { color: #c8c8c8; }
+.gds-row2 { color: #9a9a9a; }
+.gds-b, .gds-more {
+  color: #3cff7a;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font: 13px/1.32 Consolas, monospace;
+  padding: 0;
+}
+.gds-b:hover, .gds-more:hover { text-decoration: underline; }
+
+.gds-tip {
+  position: absolute;
+  left: 24px;
+  top: 72px;
+  background: #f3f3f3;
+  color: #111;
+  border: 1px solid #777;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.45);
+  padding: 8px 10px;
+  font: 12px/1.45 Consolas, monospace;
+  white-space: pre-wrap;
+  max-width: 420px;
+  z-index: 30;
+  pointer-events: none;
+}
+
+/* ── RIGHT SIDEBAR (details) kept out of the 2-pane Smartpoint grid ── */
+
+/* Command input — Smartpoint keeps > at the TOP of the right pane */
+.command-line {
+  height: 26px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  padding: 2px 8px 0;
+  flex-shrink: 0;
+  user-select: text;
+}
+
+.prompt-gt {
+  color: #ffe14d;
+  font: 14px/1 Consolas, monospace;
+  margin-right: 4px;
+  flex-shrink: 0;
+  cursor: text;
+}
+
+#commandInput {
+  flex: 1;
+  background: #000;
+  border: none;
+  outline: none;
+  color: #dfff00;
+  font: 13px Consolas, monospace;
+  caret-color: #dfff00;
+  user-select: text;
+}
+
+/* ── RIGHT SIDEBAR (details) ── */
+.details {
+  display: none;
+}
+
+.detail-card {
+  margin-bottom: 14px;
+}
+
+.card-heading {
+  color: #7ec8e3;
+  font-weight: bold;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+#locatorBadge {
+  background: #2b9ed0;
+  color: #fff;
+  padding: 1px 5px;
+  font-size: 10px;
+}
+
+#pnrSummary { color: #ccc; line-height: 1.6; }
+#pnrSummary.empty { color: #555; font-style: italic; }
+#pnrSummary b { color: #7ec8e3; }
+#pnrSummary .issued { color: #4caf50; }
+
+#progress { color: #777; padding-left: 18px; line-height: 2; }
+#progress li { font-size: 10px; }
+#progress li.done { color: #4caf50; text-decoration: line-through; }
+
+.disclaimer {
+  color: #444;
+  font-size: 9px;
+  line-height: 1.5;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #222;
+}
+
+/* ── RIGHT TOOLS BAR ── */
+.right-tools {
+  position: absolute;
+  right: 0;
+  top: 26px;   /* below tab row */
+  width: 70px;
+  height: calc(100% - 26px);
+  background: #e8e8e8;
+  color: #777;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  font-size: 19px;
+  border-left: 1px solid #ccc;
+}
+
+.right-tools span { cursor: pointer; }
+.right-tools span:hover { color: #333; }
+.right-tools b { font-size: 13px; font-weight: bold; cursor: pointer; }
+.right-tools b:hover { color: #333; }
+.right-tools em {
+  font-style: normal;
+  margin-top: auto;
+  background: #d0d0d0;
+  color: #555;
+  font-size: 10px;
+  padding: 2px 4px;
+  text-align: center;
+}
+.right-tools em b { background: #e04040; color: #fff; padding: 2px 4px; font-size: 10px; }
+.right-tools strong {
+  background: #2b9ed0;
+  color: #fff;
+  border-radius: 50%;
+  padding: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.right-tools > span:nth-last-child(-n+5) {
+  font-size: 10px;
+  background: #d0d0d0;
+  width: 46px;
+  text-align: center;
+  padding: 3px;
+  border-radius: 2px;
+}
+
+/* ── Responsive ── */
+@media (min-width: 960px) {
+  .terminal-wrap { margin-right: 70px; }
+}
+
+@media (max-width: 640px) {
+  .menu-bar   { padding-left: 6px; gap: 8px; font-size: 8px; }
+  .workspace  { grid-template-columns: 1fr; }
+  .left-pane  { display: none; }
+  .right-tools { display: none; }
+  .terminal-wrap { margin-right: 0; }
+}

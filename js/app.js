@@ -11,19 +11,123 @@ const locBadge   = document.getElementById("locatorBadge");
 const pnrSummary = document.getElementById("pnrSummary");
 const statusSpan = document.getElementById("sessionStatus");
 const officeSpan = document.getElementById("officeLabel");
+const tipEl      = document.getElementById("flightTip");
 
 const engine = new GalileoCommandEngine();
 let histIdx = -1;
+let lastCommand = "";
+
+function span(cls, text) {
+  const el = document.createElement("span");
+  el.className = cls;
+  el.textContent = text;
+  return el;
+}
+
+function clearScreen() {
+  terminal.innerHTML = "";
+  hideTip();
+}
 
 function print(text, kind) {
   const pre = document.createElement("pre");
   pre.className = "output" + (kind ? " " + kind : "");
   pre.textContent = text;
   terminal.appendChild(pre);
-  terminal.scrollTop = terminal.scrollHeight;
 }
 
-function printEcho(cmd) { print(">" + cmd, "echo"); }
+function setScreen(text, kind) {
+  clearScreen();
+  if (text) print(text, kind);
+  terminal.scrollTop = 0;
+}
+
+function printEcho(cmd) {
+  print(">" + cmd, "echo");
+}
+
+function hideTip() {
+  if (tipEl) tipEl.hidden = true;
+}
+
+function showTip(text, x, y) {
+  if (!tipEl || !text) return;
+  tipEl.textContent = text;
+  tipEl.hidden = false;
+  const wrap = tipEl.parentElement.getBoundingClientRect();
+  const left = Math.min(Math.max(8, x - wrap.left + 12), wrap.width - 200);
+  const top  = Math.min(Math.max(40, y - wrap.top + 12), wrap.height - 80);
+  tipEl.style.left = left + "px";
+  tipEl.style.top  = top + "px";
+}
+
+function renderAvailability(resp) {
+  clearScreen();
+  const header = document.createElement("pre");
+  header.className = "output avail-header";
+  header.textContent = resp.header || "";
+  terminal.appendChild(header);
+
+  (resp.flights || []).forEach(function(f) {
+    const parts = GalileoFlights.formatParts(f);
+    const block = document.createElement("div");
+    block.className = "avail-block";
+    block.dataset.notes = (f.notes || []).join("\n");
+
+    const line = document.createElement("div");
+    line.className = "avail-line";
+    line.append(
+      span("gds-ln", parts.ln + " "),
+      span("gds-city", parts.orig + " "),
+      span("gds-city", parts.dest + " "),
+      span("gds-time", parts.depart + " " + parts.arrive + "  "),
+      span("gds-al", parts.carrier + " "),
+      span("gds-fn", parts.number + "  "),
+      span("gds-cls", parts.classes + " "),
+      span("gds-eq", parts.equip + " "),
+      span("gds-flag", parts.flag)
+    );
+    block.appendChild(line);
+
+    (f.rows || []).forEach(function(row) {
+      const r2 = document.createElement("div");
+      r2.className = "avail-line";
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "gds-b";
+      b.textContent = "\u00abB\u00bb";
+      r2.appendChild(b);
+      r2.appendChild(span("gds-row2", "  " + row));
+      block.appendChild(r2);
+    });
+    if (!(f.rows && f.rows.length)) {
+      const bLine = document.createElement("div");
+      bLine.className = "avail-line";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "gds-b";
+      btn.textContent = "\u00abB\u00bb";
+      bLine.appendChild(btn);
+      block.appendChild(bLine);
+    }
+
+    terminal.appendChild(block);
+  });
+
+  if (resp.hasMore !== false) {
+    const moreWrap = document.createElement("div");
+    moreWrap.className = "avail-line";
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "gds-more";
+    more.textContent = "\u00abMore Flights\u00bb";
+    more.addEventListener("click", function() { processCommand("MD"); });
+    moreWrap.appendChild(more);
+    terminal.appendChild(moreWrap);
+  }
+
+  terminal.scrollTop = 0;
+}
 
 function setLeftPane(lines, showButtons) {
   if (leftMsg) leftMsg.textContent = lines.join("\n");
@@ -31,11 +135,8 @@ function setLeftPane(lines, showButtons) {
 }
 
 function updateTab() {
-  const s = engine.state;
-  if (tabLabel) {
-    const name = s.names && s.names.length ? s.names[0] : "";
-    tabLabel.textContent = name ? "1-" + name.slice(2) : "1->";
-  }
+  if (!tabLabel) return;
+  tabLabel.textContent = lastCommand ? ("1-" + lastCommand) : "1->";
 }
 
 function mark() {
@@ -89,12 +190,23 @@ function processCommand(raw) {
   const cmd = raw.trim();
   if (!cmd) return;
   histIdx = -1;
-  printEcho(cmd);
+  const nav = cmd.toUpperCase();
+  const isNav = nav === "MD" || nav === "MU" || nav === "MT" || nav === "MB";
+  if (!isNav) lastCommand = cmd.toUpperCase();
 
   if (cmd.toUpperCase().startsWith("LESSON ")) {
     const lesson = GalileoLessons.get(cmd.slice(7));
-    if (lesson) print(GalileoLessons.format(lesson).join("\n"), "dim");
-    else print("LESSON NOT FOUND - USE: BASIC, TICKETING or MODIFICATION", "error");
+    if (lesson) setScreen(GalileoLessons.format(lesson).join("\n"), "dim");
+    else setScreen("LESSON NOT FOUND - USE: BASIC, TICKETING or MODIFICATION", "error");
+    update();
+    return;
+  }
+
+  const navCmd = cmd.toUpperCase();
+  if (navCmd === "MD" || navCmd === "MU" || navCmd === "MT" || navCmd === "MB") {
+    const paged = engine.process(navCmd);
+    if (paged && paged.kind === "avail" && paged.flights) renderAvailability(paged);
+    else if (paged && paged.lines && paged.lines.length) setScreen(paged.lines.join("\n"), paged.kind || "");
     update();
     return;
   }
@@ -107,8 +219,10 @@ function processCommand(raw) {
     setLeftPane([hdr, ""].concat(resp.leftPaneNotes), true);
   }
 
-  if (resp.lines && resp.lines.length) {
-    print(resp.lines.join("\n"), resp.kind || "");
+  if (resp.kind === "avail" && resp.flights) {
+    renderAvailability(resp);
+  } else if (resp.lines && resp.lines.length) {
+    setScreen(resp.lines.join("\n"), resp.kind || "");
   }
 
   update();
@@ -118,6 +232,7 @@ formEl.addEventListener("submit", function(e) {
   e.preventDefault();
   processCommand(inputEl.value);
   inputEl.value = "";
+  inputEl.focus();
 });
 
 inputEl.addEventListener("keydown", function(e) {
@@ -136,17 +251,28 @@ inputEl.addEventListener("keydown", function(e) {
 
 document.addEventListener("click", function(e) {
   const btn = e.target.closest(".left-btn");
-  if (!btn) return;
-  const cmd = btn.dataset.cmd;
-  if (cmd) { processCommand(cmd); inputEl.focus(); }
+  if (btn && btn.dataset.cmd) {
+    processCommand(btn.dataset.cmd);
+    inputEl.focus();
+    return;
+  }
+  if (e.target.closest(".prompt-gt") || e.target.closest(".terminal-wrap")) {
+    if (!e.target.closest("button")) inputEl.focus();
+  }
 });
+
+terminal.addEventListener("mousemove", function(e) {
+  const block = e.target.closest(".avail-block");
+  if (!block) { hideTip(); return; }
+  showTip(block.dataset.notes || "", e.clientX, e.clientY);
+});
+terminal.addEventListener("mouseleave", hideTip);
 
 function reset() {
   engine.reset();
-  terminal.innerHTML = "";
+  lastCommand = "";
   setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
-  print("GELLELIO GALILEO TRAINING SIMULATOR\nTRAINING ENVIRONMENT - OFFLINE PRACTICE\n", "");
-  print("Sign in: SON/DEMO/DEMO   |   Help: HELP", "dim");
+  setScreen("GELLELIO GALILEO TRAINING SIMULATOR\nTRAINING ENVIRONMENT - OFFLINE PRACTICE\n\nSign in: SON/DEMO/DEMO   |   Help: HELP\nType at the > prompt above. Scroll or MD/MU to move the display.");
   update();
   inputEl.focus();
 }

@@ -189,11 +189,18 @@
     }
   ];
 
-  function search({ origin, destination }) {
-    const results = FLIGHTS.filter(f =>
-      (!origin || f.origin === origin) &&
-      (!destination || f.destination === destination)
-    );
+  function search({ origin, destination, carrier }) {
+    // DAC-JED training board matches the live Smartpoint availability (direct + connections)
+    let results;
+    if (origin === "DAC" && destination === "JED") {
+      results = FLIGHTS.slice();
+    } else {
+      results = FLIGHTS.filter(f =>
+        (!origin || f.origin === origin) &&
+        (!destination || f.destination === destination)
+      );
+    }
+    if (carrier) results = results.filter(f => f.carrier === carrier);
     return results.map((f, i) => Object.assign({}, f, { line: i + 1 }));
   }
 
@@ -208,13 +215,25 @@
 
   // Main availability line (Galileo style)
   // " 1 DAC JED01/ 0235 0615  SV  803  J2 C2 D2 I2 Y9 E9 B9 M9 K9 773 C*E"
-  function formatLine(f) {
-    const ln  = String(f.line).padStart(2, ' ');
-    const prefix = f.origin === 'DAC' ? 'DAC ' : '    ';
-    const dest   = `${f.destination}${f.freq}/`;
-    const cls    = formatClasses(f.classes);
-    return `${ln} ${prefix}${dest} ${f.depart} ${f.arrive}  ${f.carrier} ${f.number.padStart(4,' ')}  ${cls} ${f.equip} C*E`;
+  function formatParts(f) {
+    return {
+      ln: String(f.line).padStart(2, " "),
+      orig: f.origin,
+      dest: `${f.destination}${f.freq}/`,
+      depart: f.depart,
+      arrive: f.arrive,
+      carrier: f.carrier,
+      number: String(f.number).padStart(4, " "),
+      classes: formatClasses(f.classes),
+      equip: f.equip,
+      flag: "C*E"
+    };
   }
 
-  global.GalileoFlights = { search, byLine, formatLine, formatClasses, all: FLIGHTS };
+  function formatLine(f) {
+    const p = formatParts(f);
+    return `${p.ln} ${p.orig} ${p.dest} ${p.depart} ${p.arrive}  ${p.carrier} ${p.number}  ${p.classes} ${p.equip} ${p.flag}`;
+  }
+
+  global.GalileoFlights = { search, byLine, formatLine, formatParts, formatClasses, all: FLIGHTS };
 }(window));
