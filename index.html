@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gellelio Galileo Training Simulator</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="window-title"><span class="title-icon">T</span> Travelport Smartpoint - Galileo Training</div>
+    <div class="window-controls"><span>86J</span><b>ON</b><span>86JJ</span><i>—</i><i>□</i><i>×</i></div>
+  </header>
+  <nav class="menu-bar"><span>APPLICATION</span><span>TERMINAL</span><span>HISTORY</span><span>WINDOW</span><span>PNR</span><span>SEARCH</span><span>SELL</span><span>TOOLS</span><span>HELP</span></nav>
+  <main class="workspace">
+    <section class="left-pane">
+      <div id="leftMessage">NO B.F. TO DISPLAY - CREATE OR RETRIEVE FIRST</div>
+      <div class="left-tools"><span>◢</span><span>⌕</span><span>✎</span><span>▣</span><span>⚙</span><span>↻</span><span>ᴀA</span><span>↗</span><span>FS+</span></div>
+    </section>
+    <section class="terminal-wrap">
+      <div class="terminal-tabs"><span>1-&gt;</span><b>+</b></div>
+      <div class="terminal-head"><span id="sessionStatus">OFFLINE</span><span id="officeLabel">GALILEO TRAINING</span></div>
+      <div id="terminal" class="terminal" aria-live="polite"></div>
+      <form id="commandForm" class="command-line">
+        <label for="commandInput">*</label><input id="commandInput" autocomplete="off" spellcheck="false" aria-label="Galileo command input">
+        <button type="submit">ENTER</button>
+      </form>
+    </section>
+    <aside class="details">
+      <div class="detail-card">
+        <div class="card-heading">CURRENT PNR <span id="locatorBadge">---</span></div>
+        <div id="pnrSummary" class="empty">No active booking</div>
+      </div>
+      <div class="detail-card">
+        <div class="card-heading">LESSON PROGRESS</div>
+        <ol id="progress">
+          <li data-step="login">Sign in</li><li data-step="availability">Display availability</li><li data-step="sell">Sell segment</li><li data-step="name">Add passenger</li><li data-step="contact">Add contact</li><li data-step="save">End and retrieve</li><li data-step="price">Price PNR</li><li data-step="issue">Issue ticket</li>
+        </ol>
+      </div>
+      <div class="disclaimer">Educational simulator only. Not affiliated with or connected to Travelport or Galileo. No live GDS connection is used.</div>
+    </aside>
+    <div class="right-tools"><span>◉</span><span>♙</span><span>↻</span><b>SB</b><span>◈</span><span>□</span><em>TQ <b>0</b></em><span>MQ</span><span>QCT</span><span>P</span><span>O</span><strong>✈</strong><span>•••</span></div>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>
