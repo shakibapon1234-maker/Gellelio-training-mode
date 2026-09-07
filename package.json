@@ -1,0 +1,38 @@
+{
+  "name": "gellelio-galileo-training",
+  "version": "0.1.0",
+  "description": "Offline Galileo-style training simulator for academy students",
+  "main": "main.js",
+  "author": "Wings Fly Aviation Academy",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "web": "python -m http.server 4173",
+    "build-win": "electron-builder --win",
+    "build-portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.wingsflyaviation.gellelio",
+    "productName": "Gellelio Galileo Training",
+    "copyright": "Copyright 2026 Wings Fly Aviation Academy",
+    "files": [
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "privacy-policy.html",
+      "main.js"
+    ],
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

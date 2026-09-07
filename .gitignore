@@ -1,0 +1,10 @@
+node_modules/
+dist/
+android/.gradle/
+android/build/
+android/app/build/
+*.apk
+*.aab
+*.log
+.idea/
+.vscode/
