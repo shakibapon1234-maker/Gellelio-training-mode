@@ -203,6 +203,11 @@
         (!destination || f.destination === destination)
       );
     }
+    if (!results.length && origin === "DAC" && destination) {
+      results = [
+        ["BG", "147", "788", "0130", "0520"], ["BS", "315", "333", "0825", "1420"], ["TG", "322", "333", "1340", "1710"], ["QR", "639", "77W", "0400", "0650"], ["EK", "587", "77W", "1930", "2230"], ["SQ", "447", "787", "2355", "0600"], ["MH", "197", "332", "0050", "0650"], ["TK", "713", "77W", "0610", "1200"]
+      ].map((flight, index) => ({ line: index + 1, carrier: flight[0], number: flight[1], date: "15NOV", freq: "15", origin, destination, depart: flight[3], arrive: flight[4], equip: flight[2], classes: { J: 9, C: 9, D: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9 }, rows: ["T9 K9 S9 V9 W9 LC"], notes: [] }));
+    }
     if (carrier) results = results.filter(f => f.carrier === carrier);
     return results.map((f, i) => Object.assign({}, f, { line: i + 1 }));
   }

@@ -264,7 +264,7 @@ html, body {
 
 .avail-block { margin: 0; }
 .avail-line {
-  font: 13px/1.32 Consolas, monospace;
+  font: 13px/1.2 Consolas, monospace;
   white-space: pre;
   color: #e8e8e8;
 }

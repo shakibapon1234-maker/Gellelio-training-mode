@@ -138,7 +138,7 @@
 
       // ── AVAILABILITY: A01APRDACJED or A01APRDACJED*SV ──
       if (cmd.endsWith("/") && cmd.startsWith("A")) return this.process(cmd.slice(0, -1));
-      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\*[A-Z]{1,3})?$/);
+      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})([\/*][A-Z0-9]{2,3})?$/);
       if (avail) {
         const [, dateStr, orig, dest, pref] = avail;
         const aOrig = GalileoAirports.find(orig);
@@ -412,7 +412,7 @@
     error(msg) { return { lines: [msg], kind: "error" }; }
   }
 
-  GalileoCommandEngine.PAGE_SIZE = 8;
+  GalileoCommandEngine.PAGE_SIZE = 15;
 
   global.GalileoCommandEngine = GalileoCommandEngine;
   global.GalileoSteps = STEPS;

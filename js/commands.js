@@ -134,7 +134,7 @@
 
       // ── AVAILABILITY: A22JUNDACDXB  /  A22JUNDACDXB*EK  /  A22JUNDACDXB.D ──
       if (cmd.endsWith("/") && cmd.startsWith("A")) return this.process(cmd.slice(0, -1));
-      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\*[A-Z]{2})?(\.D)?$/);
+      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})([\/*][A-Z0-9]{2,3})?(\.D)?$/);
       if (avail) {
         const [, dateStr, orig, dest, pref] = avail;
         const aOrig = GalileoAirports.find(orig);
@@ -413,7 +413,7 @@
     error(msg) { return { lines: [msg], kind: "error" }; }
   }
 
-  GalileoCommandEngine.PAGE_SIZE = 8;
+  GalileoCommandEngine.PAGE_SIZE = 15;
 
   global.GalileoCommandEngine = GalileoCommandEngine;
   global.GalileoSteps = STEPS;
