@@ -268,23 +268,21 @@
 
       // ── FARE QUOTE: FQ ──
       if (cmd === "FQ") {
-        if (!this.state.segments.length) return this.error("NO AIR SEGMENT TO QUOTE");
-        const seg  = this.state.segments[0];
+        const seg  = this.state.segments[0] || { origin: "DAC", destination: "BKK", carrier: "TG", number: "322", soldClass: "W", date: "16DEC" };
         const fare = GalileoFareShop.quote(seg);
         this.state.fare   = fare;
         this.state.priced = true;
-        return { lines: [
-          `DAC ${seg.origin}-${seg.destination}  ${seg.carrier}${seg.number}/${seg.soldClass || "Y"}  ${seg.date}`,
-          ``,
-          `  FARE BASIS : ${fare.reference}`,
-          `  BASE FARE  : BDT ${fare.base.toLocaleString()}`,
-          `  TAXES/FEES : BDT ${fare.taxes.toLocaleString()}`,
-          `  ─────────────────────────────────`,
-          `  TOTAL      : BDT ${fare.total.toLocaleString()}`,
-          ``,
-          `LAST DAY TO PURCHASE: ${this.state.ticketing || "SEE CONDITIONS"}`,
-          `ENTER FXP TO STORE FARE`
-        ]};
+        const lines = ["TTL OF 59  PRICING OPTIONS AND 78    ITINERARY OPTIONS RETURNED", ""];
+        fare.options.forEach((option, index) => {
+          lines.push(`PRICING OPTION ${index + 1}                         TOTAL AMOUNT`);
+          lines.push("ADT                                        TAX INCLUDED");
+          lines.push(`1  ${option.carrier.padEnd(4)} ${option.number.padEnd(5)} ${option.cls}  ${option.date} ${option.origin} ${option.destination}   ${option.depart} ${option.arrive}    ${option.stop}   ${option.stopFlight}       ${option.suffix}`);
+          if (option.second) lines.push(`2  ${option.carrier.padEnd(4)} ${option.second.number.padEnd(5)} ${option.cls}  ${option.second.date} ${option.second.origin} ${option.second.destination}   ${option.second.depart} ${option.second.arrive}    ${option.second.stop}   ${option.second.stopFlight}       ${option.suffix}`);
+          lines.push(`«BOOK»   +TQ                                      ${option.total} BDT`);
+          lines.push("                         D  R", "");
+        });
+        lines.push("ENTER FXP TO STORE FARE");
+        return { lines, kind: "fare" };
       }
 
       // ── FXP: store fare / create TST ──

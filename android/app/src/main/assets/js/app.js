@@ -198,6 +198,19 @@ function renderAvailability(resp) {
   terminal.scrollTop = 0;
 }
 
+function renderFare(resp) {
+  clearScreen();
+  const notice = document.createElement("div");
+  notice.className = "ndc-notice";
+  notice.textContent = "✓ NDC offers may be available.  Click Here to compare.";
+  terminal.appendChild(notice);
+  const output = document.createElement("pre");
+  output.className = "output fare";
+  output.textContent = (resp.lines || []).join("\n");
+  terminal.appendChild(output);
+  terminal.scrollTop = 0;
+}
+
 function setLeftPane(lines, showButtons) {
   if (leftMsg) leftMsg.textContent = lines.join("\n");
   if (leftBtns) leftBtns.style.display = showButtons ? "flex" : "none";
@@ -290,6 +303,8 @@ function processCommand(raw) {
 
   if (resp.kind === "avail" && resp.flights) {
     renderAvailability(resp);
+  } else if (resp.kind === "fare") {
+    renderFare(resp);
   } else if (resp.lines && resp.lines.length) {
     setScreen(resp.lines.join("\n"), resp.kind || "");
   }

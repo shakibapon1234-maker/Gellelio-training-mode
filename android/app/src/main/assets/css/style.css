@@ -236,6 +236,18 @@ html, body {
 .output.avail { color: #e0e0e0; }   /* availability display */
 .output.sell  { color: #7ec8e3; }   /* sold segment confirmation */
 .output.avail-header { color: #e8e8e8; margin-bottom: 4px; }
+.output.fare { color: #e8e8e8; }
+
+.ndc-notice {
+  margin: 8px 8px 5px;
+  padding: 10px 12px;
+  background: #e4f4ed;
+  border: 1px solid #b8d6c8;
+  border-radius: 2px;
+  color: #173b2b;
+  font: 14px Arial, sans-serif;
+  white-space: pre;
+}
 
 .avail-block { margin: 0; }
 .avail-line {
