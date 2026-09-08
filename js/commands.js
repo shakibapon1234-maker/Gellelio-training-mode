@@ -286,9 +286,23 @@
         return this._displayPNR();
       }
 
-      // ── FARE QUOTE: FQ ──
-      const fareSearch = cmd.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
-      const roundTripFareSearch = cmd.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
+      // ── FARE SHOPPING / FARE QUOTE: FQ ──
+      // FS3DAC15NOVLHR = 3 adults; FS2ADT1CHDDAC15NOVLHR = 2 adults + 1 child.
+      let fsCommand = cmd;
+      let passengers = { adt: 1, chd: 0 };
+      let partyMatch = cmd.match(/^FS(\d+)ADT[/.]?(\d+)CHD(.+)$/);
+      if (partyMatch) {
+        passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) };
+        fsCommand = "FS" + partyMatch[3];
+      } else if ((partyMatch = cmd.match(/^FS(\d+)\.(\d+)C(.+)$/))) {
+        passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) };
+        fsCommand = "FS" + partyMatch[3];
+      } else if ((partyMatch = cmd.match(/^FS(\d+)([A-Z]{3}\d{2}[A-Z]{3}[A-Z]{3}(?:\d{2}[A-Z]{3}[A-Z]{3})?)$/))) {
+        passengers = { adt: parseInt(partyMatch[1]), chd: 0 };
+        fsCommand = "FS" + partyMatch[2];
+      }
+      const fareSearch = fsCommand.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
+      const roundTripFareSearch = fsCommand.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
       if (cmd === "FQ" || cmd === "FQCEK/ET" || fareSearch || roundTripFareSearch) {
         const seg  = this.state.segments[0] || {
           origin: fareSearch ? fareSearch[1] : (roundTripFareSearch ? roundTripFareSearch[1] : "DAC"),
@@ -299,13 +313,15 @@
           date: fareSearch ? fareSearch[2] : (roundTripFareSearch ? roundTripFareSearch[2] : "16DEC")
         };
         const fare = GalileoFareShop.quote(seg);
+        fare.passengers = passengers;
+        fare.options.forEach(option => { option.partyTotal = Math.round(option.total * (passengers.adt + passengers.chd * 0.75)); });
         this.state.fare   = fare;
         this.state.priced = true;
         const lines = ["TTL OF " + (roundTripFareSearch ? "31" : "59") + "  PRICING OPTIONS AND " + (roundTripFareSearch ? "70" : "78") + "    ITINERARY OPTIONS RETURNED", ""];
         fare.options.forEach((option, index) => {
-          const total = index === 4 ? "40348.00" : String(option.total);
+          const total = String(option.partyTotal);
           lines.push(`PRICING OPTION ${index + 1}${" ".repeat(24)}TOTAL AMOUNT ${total} BDT`);
-          lines.push("ADT                                        TAX INCLUDED");
+          lines.push("ADT " + passengers.adt + (passengers.chd ? "   CHD " + passengers.chd : "") + "                                  TAX INCLUDED");
           lines.push(`1  ${option.carrier.padEnd(4)} ${option.number.padEnd(5)} ${option.cls}  ${option.date} ${option.origin} ${option.destination}   ${option.depart} ${option.arrive}    ${option.stop}   ${option.stopFlight}       ${option.suffix}`);
           if (option.second) lines.push(`2  ${option.carrier.padEnd(4)} ${option.second.number.padEnd(5)} ${option.cls}  ${option.second.date} ${option.second.origin} ${option.second.destination}   ${option.second.depart} ${option.second.arrive}    ${option.second.stop}   ${option.second.stopFlight}       ${option.suffix}`);
           if (roundTripFareSearch) {

@@ -348,7 +348,7 @@ function bookFareShopOption(index) {
     "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES",
     "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES", "",
     "************************* FILED FARE *************************",
-    "FARE OPTION " + (index + 1) + " SELECTED - TOTAL BDT " + option.total,
+    "FARE OPTION " + (index + 1) + " SELECTED - TOTAL BDT " + (option.partyTotal || option.total),
     "NO PLATING CARRIER FOUND"
   ];
   setScreen(sold.join("\n"));
