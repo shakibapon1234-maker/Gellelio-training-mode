@@ -130,8 +130,38 @@ function showTip(text, x, y) {
   tipEl.style.top  = top + "px";
 }
 
+function showFlightDetails(flight, bookingClass) {
+  if (!flight || !leftMsg) return;
+  const availability = flight.classes && flight.classes[bookingClass];
+  const seatStatus = availability === "C" ? "CLOSED / WAITLIST" :
+    (availability === 0 ? "WAITLIST ONLY" : availability + " SEATS AVAILABLE");
+  const notes = (flight.notes && flight.notes.length) ? flight.notes : [
+    "CHECK FARE RULES, BAGGAGE AND TICKET TIME LIMIT BEFORE SELLING.",
+    "USE N" + flight.line + bookingClass + "1 TO SELL ONE SEAT IN THIS CLASS."
+  ];
+  const detailLines = [
+    "FLIGHT / CLASS DETAILS", "",
+    flight.line + ". " + flight.carrier + " " + flight.number + "  " + (flight.airline_full || "OPERATING CARRIER"),
+    "BOOKING CLASS " + bookingClass + "  " + seatStatus, "",
+    "DATE       " + flight.date + "   OPERATING " + (flight.freq || "DAILY"),
+    "ROUTE      " + flight.origin + "  -  " + flight.destination,
+    "DEPARTS    " + flight.depart + "  TERMINAL " + (flight.termOrig || "1"),
+    "ARRIVES    " + flight.arrive + "  TERMINAL " + (flight.termDest || "1"),
+    "AIRCRAFT   " + (flight.equip || "SEE CARRIER"),
+    "STATUS     CONFIRM ON AVAILABILITY", "",
+    "TRAVEL INFORMATION", "------------------"
+  ].concat(notes).concat(["", "COMMAND: N" + flight.line + bookingClass + "1  (SELL 1 SEAT)", "CLICK ANOTHER CLASS TO VIEW ITS DETAILS"]);
+  setLeftPane(detailLines, true);
+}
+
 function renderAvailability(resp) {
   clearScreen();
+  setLeftPane([
+    "FLIGHT AVAILABILITY DISPLAY",
+    "",
+    "CLICK ANY GREEN BOOKING CLASS",
+    "TO VIEW FLIGHT, SEAT AND TRAVEL DETAILS."
+  ], false);
   const header = document.createElement("pre");
   header.className = "output avail-header";
   header.textContent = resp.header || "";
@@ -151,11 +181,30 @@ function renderAvailability(resp) {
       span("gds-city", parts.dest + " "),
       span("gds-time", parts.depart + " " + parts.arrive + "  "),
       span("gds-al", parts.carrier + " "),
-      span("gds-fn", parts.number + "  "),
-      span("gds-cls", parts.classes + " "),
-      span("gds-eq", parts.equip + " "),
-      span("gds-flag", parts.flag)
+      span("gds-fn", parts.number + "  ")
     );
+    Object.entries(f.classes || {}).forEach(function(entry) {
+      const bookingClass = entry[0];
+      const availability = entry[1];
+      const classButton = document.createElement("button");
+      classButton.type = "button";
+      classButton.className = "gds-cls" + (availability === "C" || availability === 0 ? " closed" : "");
+      classButton.textContent = bookingClass + availability;
+      classButton.title = "Show " + bookingClass + " class details";
+      classButton.addEventListener("click", function(e) {
+        e.stopPropagation();
+        terminal.querySelectorAll(".gds-cls.selected").forEach(function(el) { el.classList.remove("selected"); });
+        classButton.classList.add("selected");
+        showFlightDetails(f, bookingClass);
+      });
+      line.appendChild(classButton);
+      line.appendChild(document.createTextNode(" "));
+    });
+    line.append(span("gds-eq", parts.equip + " "), span("gds-flag", parts.flag));
+    line.addEventListener("click", function() {
+      const defaultClass = Object.keys(f.classes || {})[0];
+      if (defaultClass) showFlightDetails(f, defaultClass);
+    });
     block.appendChild(line);
 
     (f.rows || []).forEach(function(row) {

@@ -87,7 +87,7 @@ html, body {
   height: calc(100vh - 68px);
   max-height: calc(100vh - 68px);
   display: grid;
-  grid-template-columns: minmax(240px, 45%) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 46%) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   position: relative;
   overflow: hidden;
@@ -262,9 +262,9 @@ html, body {
   white-space: pre;
 }
 
-.avail-block { margin: 0; }
+.avail-block { margin: 0 0 3px; min-width: max-content; }
 .avail-line {
-  font: 13px/1.2 Consolas, monospace;
+  font: 14px/1.26 Consolas, monospace;
   white-space: pre;
   color: #e8e8e8;
 }
@@ -273,7 +273,10 @@ html, body {
 .gds-time { color: #e8e8e8; }
 .gds-al { color: #4ea3ff; }
 .gds-fn { color: #4ea3ff; }
-.gds-cls { color: #6fdf6f; }
+.gds-cls { color: #39ed39; cursor: pointer; background: transparent; border: 0; padding: 0; font: inherit; }
+.gds-cls:hover, .gds-cls:focus { color: #fff; background: #177c36; outline: 1px solid #64ff84; }
+.gds-cls.selected { color: #071107; background: #70ff85; }
+.gds-cls.closed { color: #999; }
 .gds-eq { color: #e8e8e8; }
 .gds-flag { color: #c8c8c8; }
 .gds-row2 { color: #9a9a9a; }
