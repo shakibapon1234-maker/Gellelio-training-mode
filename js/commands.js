@@ -288,16 +288,18 @@
 
       // ── FARE SHOPPING / FARE QUOTE: FQ ──
       // FS3DAC15NOVLHR = 3 adults; FS2ADT1CHDDAC15NOVLHR = 2 adults + 1 child.
-      let fsCommand = cmd;
+      // Smartpoint may append passenger/price qualifiers, e.g. +P1-2.3*07.
+      // They refine the display but do not change this training simulator's fare search.
+      let fsCommand = cmd.replace(/\+P[0-9.*-]+$/, "");
       let passengers = { adt: 1, chd: 0 };
-      let partyMatch = cmd.match(/^FS(\d+)ADT[/.]?(\d+)CHD(.+)$/);
+      let partyMatch = fsCommand.match(/^FS(\d+)ADT[/.]?(\d+)CHD(.+)$/);
       if (partyMatch) {
         passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) };
         fsCommand = "FS" + partyMatch[3];
-      } else if ((partyMatch = cmd.match(/^FS(\d+)\.(\d+)C(.+)$/))) {
+      } else if ((partyMatch = fsCommand.match(/^FS(\d+)\.(\d+)C(.+)$/))) {
         passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) };
         fsCommand = "FS" + partyMatch[3];
-      } else if ((partyMatch = cmd.match(/^FS(\d+)([A-Z]{3}\d{2}[A-Z]{3}[A-Z]{3}(?:\d{2}[A-Z]{3}[A-Z]{3})?)$/))) {
+      } else if ((partyMatch = fsCommand.match(/^FS(\d+)([A-Z]{3}\d{2}[A-Z]{3}[A-Z]{3}(?:\d{2}[A-Z]{3}[A-Z]{3})?)$/))) {
         passengers = { adt: parseInt(partyMatch[1]), chd: 0 };
         fsCommand = "FS" + partyMatch[2];
       }
