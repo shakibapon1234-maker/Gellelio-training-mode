@@ -306,6 +306,11 @@ html, body {
   pointer-events: none;
 }
 
+.availability-fill { min-height: 275px; margin: 14px 0 8px; padding: 8px 0; border-top: 1px solid #3f3f3f; border-bottom: 1px solid #222; display: flex; flex-direction: column; justify-content: space-around; min-width: max-content; }
+.availability-fill-title { color: #58b5ed; font: 12px Consolas, monospace; letter-spacing: .02em; }
+.availability-summary-item { width: max-content; border: 0; padding: 2px 5px; background: transparent; color: #9d9d9d; font: 13px Consolas, monospace; text-align: left; cursor: pointer; }
+.availability-summary-item:hover { background: #183d2a; color: #fff; }
+
 /* ── RIGHT SIDEBAR (details) kept out of the 2-pane Smartpoint grid ── */
 
 /* Command input — Smartpoint keeps > at the TOP of the right pane */
@@ -402,6 +407,7 @@ html, body {
 
 .right-tools span { cursor: pointer; }
 .right-tools span:hover { color: #333; }
+.right-tools .history-tool { color: #168ac6; font-size: 22px; line-height: 1; }
 .right-tools b { font-size: 13px; font-weight: bold; cursor: pointer; }
 .right-tools b:hover { color: #333; }
 .right-tools em {
@@ -436,19 +442,22 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.28);
+  background: transparent;
+  pointer-events: none;
 }
 
 .history-panel[hidden] { display: none; }
 
 .history-window {
-  width: min(480px, calc(100vw - 28px));
+  position: absolute;
+  right: 76px;
+  top: 74px;
+  width: min(460px, calc(100vw - 94px));
   background: #f4f4f4;
   border: 1px solid #777;
   box-shadow: 3px 4px 12px rgba(0, 0, 0, 0.42);
   padding: 10px 14px 16px;
+  pointer-events: auto;
 }
 
 .history-titlebar {
@@ -530,6 +539,9 @@ html, body {
 
 .history-btn.primary { background: #164b69; border-color: #0d3044; }
 .history-btn:hover { filter: brightness(1.1); }
+
+.brand-panel { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0,0,0,.42); font-family: Arial, sans-serif; color: #182632; }
+.brand-panel[hidden] { display: none; }.brand-window { width: min(1280px, calc(100vw - 90px)); height: min(720px, calc(100vh - 80px)); background: #f5f5f5; border: 1px solid #aeb5b9; box-shadow: 0 8px 30px rgba(0,0,0,.6); display: flex; flex-direction: column; }.brand-titlebar { height: 40px; flex: 0 0 40px; background: #101b25; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 16px; }.brand-titlebar button { border: 0; background: transparent; color: #fff; font-size: 30px; cursor: pointer; }.brand-route { background: #fff; min-height: 76px; border-bottom: 2px dotted #d3d3d3; padding: 12px 28px; display: flex; gap: 24px; align-items: center; font-size: 17px; }.brand-route b { border-top: 3px solid #2a8cc8; padding: 8px 12px; white-space: nowrap; }.brand-route span { flex: 1; }.brand-route label { white-space: nowrap; }.brand-route select { padding: 5px; font-size: 16px; }.brand-body { display: grid; grid-template-columns: 25% 42% 33%; flex: 1; min-height: 0; background: #e7e7e7; }.brand-families { background: #fff; overflow: auto; }.brand-family { width: 100%; min-height: 96px; text-align: left; border: 0; border-bottom: 1px solid #eee; background: #fff; padding: 16px 12px; cursor: pointer; font-size: 16px; }.brand-family.active { background: #e1e1e1; border-left: 5px solid #2b92cc; }.brand-family b,.brand-family span { display: block; }.brand-family span { margin-top: 12px; color: #00a51b; font: 14px Consolas, monospace; }.brand-main { padding: 14px; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }.brand-hero { min-height: 135px; display: flex; background: #ccc; align-items: center; gap: 24px; padding: 18px; color: #5a626b; }.brand-logo { height: 92px; width: 96px; display: grid; place-items: center; background: #fff; color: #1d78ba; font-weight: bold; font-size: 24px; }.brand-hero b { display: block; font-size: 42px; }.brand-hero span { font-size: 19px; line-height: 1.45; }.brand-description { flex: 1; overflow: auto; background: #fff; padding: 15px; font-size: 17px; line-height: 1.48; }.brand-description h3 { font-size: 19px; font-weight: normal; }.brand-description p { margin: 13px 0; }.brand-description ul { padding-left: 24px; }.brand-ancillary { background: #f9f9f9; padding: 14px 18px; overflow: auto; }.brand-ancillary h3 { font-size: 19px; }.brand-ancillary > p { color: #65717b; font-size: 16px; line-height: 1.35; margin: 5px 0 12px; }.ancillary { min-height: 72px; border-bottom: 1px solid #ccc; padding: 11px 4px 8px 40px; position: relative; font-size: 17px; }.ancillary i { position: absolute; left: 4px; top: 14px; color: #888; font-style: normal; font-size: 23px; }.ancillary b,.ancillary span { display: block; }.ancillary span { margin-top: 4px; }.brand-footer { height: 55px; flex: 0 0 55px; display: flex; align-items: center; justify-content: space-between; padding: 8px 22px; background: #e3e3e3; color: #67727c; font-size: 16px; }.brand-footer button { align-self: stretch; background: #0d4265; border: 0; color: #fff; padding: 0 28px; font-weight: bold; font-size: 15px; cursor: pointer; }
 
 @media (max-width: 520px) {
   .history-actions { gap: 5px; }

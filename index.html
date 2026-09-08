@@ -83,7 +83,7 @@ CREATE OR RETRIEVE FIRST</div>
 
     <div class="right-tools">
       <span title="Queue">&#9673;</span>
-      <span title="Profiles">&#9817;</span>
+      <span id="historyTool" class="history-tool" title="Command History">&#128339;</span>
       <span title="Refresh">&#8635;</span>
       <b title="SmartButton">SB</b>
       <span title="Workflows">&#9672;</span>
@@ -107,6 +107,19 @@ CREATE OR RETRIEVE FIRST</div>
         <button id="historyOptions" class="history-btn" type="button">OPTIONS</button>
         <button id="historyDelete" class="history-btn" type="button">DELETE SELECTED</button>
       </div>
+    </div>
+  </section>
+
+  <section id="brandPanel" class="brand-panel" hidden aria-labelledby="brandTitle">
+    <div class="brand-window" role="dialog" aria-modal="true">
+      <div class="brand-titlebar"><span id="brandTitle">Brands and Ancillaries</span><button id="brandClose" type="button" aria-label="Close">×</button></div>
+      <div class="brand-route"><b id="brandSegment">1 DAC&gt;BKK</b><span id="brandFlight"></span><label>Passengers: <select id="brandPax"><option>1</option><option>2</option><option>3</option></select></label></div>
+      <div class="brand-body">
+        <aside id="brandFamilies" class="brand-families"></aside>
+        <article class="brand-main"><div id="brandHero" class="brand-hero"></div><div id="brandDescription" class="brand-description"></div></article>
+        <aside class="brand-ancillary"><h3>Ancillaries</h3><p>Additional services available after booking.</p><div id="brandAncillaries"></div></aside>
+      </div>
+      <div class="brand-footer"><span>Note: Validate brands and ancillaries at Fare Quote.</span><button id="brandCloseFooter" type="button">CLOSE</button></div>
     </div>
   </section>
 

@@ -15,9 +15,13 @@ const tipEl      = document.getElementById("flightTip");
 const historyPanel = document.getElementById("historyPanel");
 const historyList = document.getElementById("historyList");
 const historyMenu = document.getElementById("historyMenu");
+const historyTool = document.getElementById("historyTool");
+const brandPanel = document.getElementById("brandPanel");
 const historyInput = { selected: -1 };
+const HISTORY_KEY = "gellelio-command-history-v1";
 
 const engine = new GalileoCommandEngine();
+try { const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); if (Array.isArray(stored)) engine.state.history = stored.slice(-100); } catch (_) {}
 let histIdx = -1;
 let lastCommand = "";
 
@@ -53,6 +57,8 @@ function printEcho(cmd) {
 function hideTip() {
   if (tipEl) tipEl.hidden = true;
 }
+
+function persistHistory() { try { localStorage.setItem(HISTORY_KEY, JSON.stringify((engine.state.history || []).slice(-100))); } catch (_) {} }
 
 function renderHistory() {
   if (!historyList) return;
@@ -107,16 +113,36 @@ function sendHistorySelection() {
 function deleteHistorySelection() {
   if (historyInput.selected < 0) return;
   engine.state.history.splice(historyInput.selected, 1);
+  persistHistory();
   historyInput.selected = -1;
   renderHistory();
 }
 
+function closeBrands() { if (brandPanel) brandPanel.hidden = true; }
+function openBrands(flight, bookingClass) {
+  if (!brandPanel || !flight) return;
+  const available = flight.classes && flight.classes[bookingClass];
+  const families = [["Promotion International", "Q9  V9  G9  B9"], ["Saver International", "T9  L9  H9"], ["Freedom International", "Y9  M9  K9  N9"], ["Blue Ribbon International", "C9  D9  J9"]];
+  document.getElementById("brandSegment").textContent = flight.line + " " + flight.origin + ">" + flight.destination;
+  document.getElementById("brandFlight").textContent = flight.date + "  " + flight.origin + " " + flight.depart + " > " + flight.destination + " " + flight.arrive + " / " + flight.carrier + " " + flight.number;
+  const familyEl = document.getElementById("brandFamilies"); familyEl.innerHTML = "";
+  families.forEach(function(family, index) { const item = document.createElement("button"); item.type = "button"; item.className = "brand-family" + (index === 2 ? " active" : ""); item.innerHTML = "<b>" + family[0] + "</b><span>" + family[1] + "</span>"; familyEl.appendChild(item); });
+  document.getElementById("brandHero").innerHTML = "<div class='brand-logo'>" + flight.carrier + "</div><div><b>" + flight.carrier + " " + flight.number + "</b><span>" + flight.date + "<br>" + flight.origin + " " + flight.depart + "  >  " + flight.destination + " " + flight.arrive + "</span></div>";
+  document.getElementById("brandDescription").innerHTML = "<h3>Currently viewing " + bookingClass + " Class</h3><p><b>" + (available === "C" ? "Waitlist only" : available + " seats available") + "</b></p><p>Economy fare brand for " + (flight.airline_full || "the operating carrier") + ". Confirm fare rules and ticketing conditions before selling.</p><ul><li>Cabin baggage allowance included</li><li>Seat selection subject to availability</li><li>Changes and refund rules vary by fare</li><li>Meals and special services by carrier policy</li></ul>";
+  const items = [["▣", "Baggage Allowance", "Included"], ["▰", "Hand-carry Allowance", "Included"], ["◆", "CHANGE FEE", "Varies based on flight"], ["!", "Rebooking", "Varies based on flight"], ["▾", "Pre Reserved Seat", "Available"], ["♨", "Inflight Meal", "Carrier policy"]];
+  document.getElementById("brandAncillaries").innerHTML = items.map(function(item) { return "<div class='ancillary'><i>" + item[0] + "</i><b>" + item[1] + "</b><span>" + item[2] + "</span></div>"; }).join(""); brandPanel.hidden = false;
+}
+
 if (historyMenu) historyMenu.addEventListener("click", openHistory);
+if (historyTool) historyTool.addEventListener("click", openHistory);
+document.getElementById("brandClose")?.addEventListener("click", closeBrands);
+document.getElementById("brandCloseFooter")?.addEventListener("click", closeBrands);
 if (historyPanel) historyPanel.addEventListener("click", function(e) {
   if (e.target === historyPanel) closeHistory();
 });
 document.addEventListener("keydown", function(e) {
   if (e.key === "Escape" && historyPanel && !historyPanel.hidden) closeHistory();
+  if (e.key === "Escape" && brandPanel && !brandPanel.hidden) closeBrands();
 });
 
 function showTip(text, x, y) {
@@ -196,6 +222,7 @@ function renderAvailability(resp) {
         terminal.querySelectorAll(".gds-cls.selected").forEach(function(el) { el.classList.remove("selected"); });
         classButton.classList.add("selected");
         showFlightDetails(f, bookingClass);
+        openBrands(f, bookingClass);
       });
       line.appendChild(classButton);
       line.appendChild(document.createTextNode(" "));
@@ -231,6 +258,24 @@ function renderAvailability(resp) {
 
     terminal.appendChild(block);
   });
+
+  if ((resp.flights || []).length > 0 && (resp.flights || []).length <= 6) {
+    const summary = document.createElement("section");
+    summary.className = "availability-fill";
+    const title = document.createElement("div");
+    title.className = "availability-fill-title";
+    title.textContent = "CARRIER AVAILABILITY SUMMARY  —  SELECT A GREEN BOOKING CLASS FOR BRANDS / ANCILLARIES";
+    summary.appendChild(title);
+    (resp.flights || []).forEach(function(f) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "availability-summary-item";
+      item.textContent = "LINE " + f.line + "   " + f.carrier + " " + f.number + "   " + f.origin + "-" + f.destination + "   " + f.depart + "-" + f.arrive + "   " + GalileoFlights.formatClasses(f.classes);
+      item.addEventListener("click", function() { const cls = Object.keys(f.classes || {})[0]; if (cls) { showFlightDetails(f, cls); openBrands(f, cls); } });
+      summary.appendChild(item);
+    });
+    terminal.appendChild(summary);
+  }
 
   if (resp.hasMore !== false) {
     const moreWrap = document.createElement("div");
@@ -334,6 +379,7 @@ function update() {
   updateTab();
   updatePNR();
   mark();
+  persistHistory();
 }
 
 function processCommand(raw) {
@@ -362,6 +408,11 @@ function processCommand(raw) {
   }
 
   const resp = engine.process(cmd);
+
+  if (cmd.toUpperCase() === "SOF") {
+    engine.state.history = [];
+    try { localStorage.removeItem(HISTORY_KEY); } catch (_) {}
+  }
 
   if (resp.segment && resp.leftPaneNotes && resp.leftPaneNotes.length) {
     const seg = resp.segment;
@@ -444,7 +495,9 @@ terminal.addEventListener("mousemove", function(e) {
 terminal.addEventListener("mouseleave", hideTip);
 
 function reset() {
+  const preservedHistory = engine.state.history || [];
   engine.reset();
+  engine.state.history = preservedHistory;
   historyInput.selected = -1;
   lastCommand = "";
   setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
