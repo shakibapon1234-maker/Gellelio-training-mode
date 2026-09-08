@@ -204,9 +204,19 @@ function renderFare(resp) {
   notice.className = "ndc-notice";
   notice.textContent = "✓ NDC offers may be available.  Click Here to compare.";
   terminal.appendChild(notice);
-  const output = document.createElement("pre");
-  output.className = "output fare";
-  output.textContent = (resp.lines || []).join("\n");
+  const output = document.createElement("div");
+  output.className = "fare-output";
+  (resp.lines || []).forEach(function(line) {
+    const row = document.createElement("div");
+    row.className = "fare-row";
+    if (/^PRICING OPTION|^ADT|^TTL OF/.test(line)) row.classList.add("fare-label");
+    if (/TOTAL AMOUNT/.test(line)) row.classList.add("fare-total");
+    if (/^\d+\s/.test(line)) row.classList.add("fare-flight");
+    if (/^«BOOK»/.test(line)) row.classList.add("fare-book");
+    if (/D  R/.test(line)) row.classList.add("fare-actions");
+    row.textContent = line || " ";
+    output.appendChild(row);
+  });
   terminal.appendChild(output);
   terminal.scrollTop = 0;
 }

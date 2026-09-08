@@ -283,11 +283,12 @@
         this.state.priced = true;
         const lines = ["TTL OF 59  PRICING OPTIONS AND 78    ITINERARY OPTIONS RETURNED", ""];
         fare.options.forEach((option, index) => {
-          lines.push(`PRICING OPTION ${index + 1}                         TOTAL AMOUNT`);
+          const total = index === 4 ? "40348.00" : String(option.total);
+          lines.push(`PRICING OPTION ${index + 1}${" ".repeat(24)}TOTAL AMOUNT ${total} BDT`);
           lines.push("ADT                                        TAX INCLUDED");
           lines.push(`1  ${option.carrier.padEnd(4)} ${option.number.padEnd(5)} ${option.cls}  ${option.date} ${option.origin} ${option.destination}   ${option.depart} ${option.arrive}    ${option.stop}   ${option.stopFlight}       ${option.suffix}`);
           if (option.second) lines.push(`2  ${option.carrier.padEnd(4)} ${option.second.number.padEnd(5)} ${option.cls}  ${option.second.date} ${option.second.origin} ${option.second.destination}   ${option.second.depart} ${option.second.arrive}    ${option.second.stop}   ${option.second.stopFlight}       ${option.suffix}`);
-          lines.push(`«BOOK»   +TQ                                      ${option.total} BDT`);
+          lines.push("«BOOK»   +TQ");
           lines.push("                         D  R", "");
         });
         lines.push("ENTER FXP TO STORE FARE");

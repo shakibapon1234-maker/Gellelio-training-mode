@@ -236,7 +236,18 @@ html, body {
 .output.avail { color: #e0e0e0; }   /* availability display */
 .output.sell  { color: #7ec8e3; }   /* sold segment confirmation */
 .output.avail-header { color: #e8e8e8; margin-bottom: 4px; }
-.output.fare { color: #e8e8e8; }
+.fare-output {
+  min-width: 78ch;
+  padding: 2px 0 18px;
+  font: 14px/1.35 Consolas, monospace;
+  white-space: pre;
+}
+.fare-row { min-height: 19px; color: #e8e8e8; }
+.fare-label { color: #f1f1f1; }
+.fare-total { color: #39ff14; }
+.fare-flight { color: #18b8ff; }
+.fare-book { color: #00ff38; }
+.fare-actions { color: #18b8ff; }
 
 .ndc-notice {
   margin: 8px 8px 5px;
