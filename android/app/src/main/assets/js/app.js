@@ -182,12 +182,6 @@ function showFlightDetails(flight, bookingClass) {
 
 function renderAvailability(resp) {
   clearScreen();
-  setLeftPane([
-    "FLIGHT AVAILABILITY DISPLAY",
-    "",
-    "CLICK ANY GREEN BOOKING CLASS",
-    "TO VIEW FLIGHT, SEAT AND TRAVEL DETAILS."
-  ], false);
   const header = document.createElement("pre");
   header.className = "output avail-header";
   header.textContent = resp.header || "";
@@ -276,16 +270,14 @@ function renderAvailability(resp) {
 
 function renderFare(resp) {
   clearScreen();
-  const notice = document.createElement("div");
-  notice.className = "ndc-notice";
-  notice.textContent = "✓ NDC offers may be available.  Click Here to compare.";
-  terminal.appendChild(notice);
   const output = document.createElement("div");
   output.className = "fare-output";
+  let fareOptionIndex = -1;
   (resp.lines || []).forEach(function(line) {
     const row = document.createElement("div");
     row.className = "fare-row";
-    if (/^PRICING OPTION|^ADT|^TTL OF/.test(line)) row.classList.add("fare-label");
+    if (/^PRICING OPTION/.test(line)) { row.classList.add("fare-label"); fareOptionIndex++; }
+    if (/^ADT|^TTL OF/.test(line)) row.classList.add("fare-label");
     if (/TOTAL AMOUNT/.test(line)) row.classList.add("fare-total");
     if (/^\d+\s/.test(line)) row.classList.add("fare-flight");
     if (/^«BOOK»/.test(line)) row.classList.add("fare-book");
@@ -297,6 +289,14 @@ function renderFare(resp) {
       total.className = "fare-total-value";
       total.textContent = parts[1].trim();
       row.appendChild(total);
+    } else if (/^«BOOK»/.test(line)) {
+      const book = document.createElement("button");
+      book.type = "button";
+      book.className = "fare-book-button";
+      book.textContent = line;
+      const selectedOption = fareOptionIndex;
+      book.addEventListener("click", function() { bookFareShopOption(selectedOption); });
+      row.appendChild(book);
     } else {
       row.textContent = line || " ";
     }
@@ -304,6 +304,17 @@ function renderFare(resp) {
   });
   terminal.appendChild(output);
   terminal.scrollTop = 0;
+}
+
+function bookFareShopOption(index) {
+  const option = engine.state.fare && engine.state.fare.options && engine.state.fare.options[index];
+  if (!option) return;
+  const segment = { segNum: 1, carrier: option.carrier.replace("#", ""), number: option.number, soldClass: option.cls, date: option.date, origin: option.origin, destination: option.destination, depart: option.depart, arrive: option.arrive, termOrig: "1", termDest: "1", paxCount: 1, status: "HS", notes: ["DEPARTS " + option.origin + " TERMINAL 1 - ARRIVES " + option.destination + " TERMINAL 1", "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA MAY BE PASSED TO GOVERNMENT AUTHORITIES FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"] };
+  engine.state.segments = [segment]; engine.state.priced = true;
+  const sold = ["************************ SOLD SEGMENTS ************************", " 1. " + segment.carrier + "  " + segment.number + " " + segment.soldClass + " " + segment.date + " " + segment.origin + segment.destination + " " + segment.status + " " + segment.depart + " " + segment.arrive + "       E", "DEPARTS " + segment.origin + " TERMINAL 1", "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION", "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES", "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES", "", "************************* FILED FARE *************************", "FARE OPTION " + (index + 1) + " SELECTED - TOTAL BDT " + option.total, "NO PLATING CARRIER FOUND"];
+  setScreen(sold.join("\n"));
+  setLeftPane(["1. " + segment.carrier + " " + segment.number + " " + segment.soldClass + " " + segment.date + " " + segment.origin + segment.destination + " HS1 " + segment.depart + " " + segment.arrive, ""].concat(segment.notes), true);
+  update(); inputEl.focus();
 }
 
 function setLeftPane(lines, showButtons) {

@@ -249,6 +249,8 @@ html, body {
 .fare-total-value { position: absolute; right: 1ch; color: #39ff14; }
 .fare-flight { color: #18b8ff; }
 .fare-book { color: #00ff38; }
+.fare-book-button { padding: 0; border: 0; background: transparent; color: #00ff38; font: inherit; cursor: pointer; }
+.fare-book-button:hover, .fare-book-button:focus { color: #fff; text-decoration: underline; outline: none; }
 .fare-actions { color: #18b8ff; }
 
 .ndc-notice {
