@@ -288,25 +288,33 @@
 
       // ── FARE QUOTE: FQ ──
       const fareSearch = cmd.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
-      if (cmd === "FQ" || cmd === "FQCEK/ET" || fareSearch) {
+      const roundTripFareSearch = cmd.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
+      if (cmd === "FQ" || cmd === "FQCEK/ET" || fareSearch || roundTripFareSearch) {
         const seg  = this.state.segments[0] || {
-          origin: fareSearch ? fareSearch[1] : "DAC",
-          destination: fareSearch ? fareSearch[3] : "BKK",
+          origin: fareSearch ? fareSearch[1] : (roundTripFareSearch ? roundTripFareSearch[1] : "DAC"),
+          destination: fareSearch ? fareSearch[3] : (roundTripFareSearch ? roundTripFareSearch[3] : "BKK"),
           carrier: "TG",
           number: "322",
           soldClass: "W",
-          date: fareSearch ? fareSearch[2] : "16DEC"
+          date: fareSearch ? fareSearch[2] : (roundTripFareSearch ? roundTripFareSearch[2] : "16DEC")
         };
         const fare = GalileoFareShop.quote(seg);
         this.state.fare   = fare;
         this.state.priced = true;
-        const lines = ["TTL OF 59  PRICING OPTIONS AND 78    ITINERARY OPTIONS RETURNED", ""];
+        const lines = ["TTL OF " + (roundTripFareSearch ? "31" : "59") + "  PRICING OPTIONS AND " + (roundTripFareSearch ? "70" : "78") + "    ITINERARY OPTIONS RETURNED", ""];
         fare.options.forEach((option, index) => {
           const total = index === 4 ? "40348.00" : String(option.total);
           lines.push(`PRICING OPTION ${index + 1}${" ".repeat(24)}TOTAL AMOUNT ${total} BDT`);
           lines.push("ADT                                        TAX INCLUDED");
           lines.push(`1  ${option.carrier.padEnd(4)} ${option.number.padEnd(5)} ${option.cls}  ${option.date} ${option.origin} ${option.destination}   ${option.depart} ${option.arrive}    ${option.stop}   ${option.stopFlight}       ${option.suffix}`);
           if (option.second) lines.push(`2  ${option.carrier.padEnd(4)} ${option.second.number.padEnd(5)} ${option.cls}  ${option.second.date} ${option.second.origin} ${option.second.destination}   ${option.second.depart} ${option.second.arrive}    ${option.second.stop}   ${option.second.stopFlight}       ${option.suffix}`);
+          if (roundTripFareSearch) {
+            const returnDate = roundTripFareSearch[4];
+            const returnOrigin = roundTripFareSearch[3];
+            const returnDest = roundTripFareSearch[5];
+            lines.push(`3  ${option.carrier.padEnd(4)} ${(Number(option.number) + 1 + index).toString().padEnd(5)} ${option.cls}  ${returnDate} ${returnOrigin} ${returnDest}   1145 1705    WE   359       ${option.suffix}`);
+            lines.push(`4  ${option.carrier.padEnd(4)} ${(Number(option.number) + 2 + index).toString().padEnd(5)} ${option.cls}  ${returnDate} ${returnDest} ${returnOrigin}   2130 2355    TH   320       ${option.suffix}`);
+          }
           lines.push("«BOOK»   +TQ");
           lines.push("                         D  R", "");
         });

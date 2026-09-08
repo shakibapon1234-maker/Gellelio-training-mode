@@ -281,26 +281,6 @@ function renderAvailability(resp) {
     terminal.appendChild(block);
   });
 
-  // Carrier-specific displays can legitimately return only a few flights.
-  // Smartpoint fills the remaining work area with useful availability context.
-  if ((resp.flights || []).length > 0 && (resp.flights || []).length <= 6) {
-    const summary = document.createElement("section");
-    summary.className = "availability-fill";
-    const title = document.createElement("div");
-    title.className = "availability-fill-title";
-    title.textContent = "CARRIER AVAILABILITY SUMMARY  —  SELECT A GREEN BOOKING CLASS FOR BRANDS / ANCILLARIES";
-    summary.appendChild(title);
-    (resp.flights || []).forEach(function(f) {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "availability-summary-item";
-      item.textContent = "LINE " + f.line + "   " + f.carrier + " " + f.number + "   " + f.origin + "-" + f.destination + "   " + f.depart + "-" + f.arrive + "   " + GalileoFlights.formatClasses(f.classes);
-      item.addEventListener("click", function() { const cls = Object.keys(f.classes || {})[0]; if (cls) { showFlightDetails(f, cls); openBrands(f, cls); } });
-      summary.appendChild(item);
-    });
-    terminal.appendChild(summary);
-  }
-
   if (resp.hasMore !== false) {
     const moreWrap = document.createElement("div");
     moreWrap.className = "avail-line";
@@ -413,6 +393,8 @@ function processCommand(raw) {
   const nav = cmd.toUpperCase();
   const isNav = nav === "MD" || nav === "MU" || nav === "MT" || nav === "MB";
   if (!isNav) lastCommand = cmd.toUpperCase();
+  // A new terminal entry replaces the contextual panel from the previous display.
+  if (!isNav) setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
 
   if (cmd.toUpperCase().startsWith("LESSON ")) {
     const lesson = GalileoLessons.get(cmd.slice(7));

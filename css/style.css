@@ -316,10 +316,6 @@ html, body {
   pointer-events: none;
 }
 
-.availability-fill { min-height: 275px; margin: 14px 0 8px; padding: 8px 0; border-top: 1px solid #3f3f3f; border-bottom: 1px solid #222; display: flex; flex-direction: column; justify-content: space-around; min-width: max-content; }
-.availability-fill-title { color: #58b5ed; font: 12px Consolas, monospace; letter-spacing: .02em; }
-.availability-summary-item { width: max-content; border: 0; padding: 2px 5px; background: transparent; color: #9d9d9d; font: 13px Consolas, monospace; text-align: left; cursor: pointer; }
-.availability-summary-item:hover { background: #183d2a; color: #fff; }
 
 /* Detailed availability returned after clicking a booking class. */
 .left-message {
