@@ -267,8 +267,16 @@
       }
 
       // ── FARE QUOTE: FQ ──
-      if (cmd === "FQ") {
-        const seg  = this.state.segments[0] || { origin: "DAC", destination: "BKK", carrier: "TG", number: "322", soldClass: "W", date: "16DEC" };
+      const fareSearch = cmd.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
+      if (cmd === "FQ" || cmd === "FQCEK/ET" || fareSearch) {
+        const seg  = this.state.segments[0] || {
+          origin: fareSearch ? fareSearch[1] : "DAC",
+          destination: fareSearch ? fareSearch[3] : "BKK",
+          carrier: "TG",
+          number: "322",
+          soldClass: "W",
+          date: fareSearch ? fareSearch[2] : "16DEC"
+        };
         const fare = GalileoFareShop.quote(seg);
         this.state.fare   = fare;
         this.state.priced = true;

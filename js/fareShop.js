@@ -10,7 +10,8 @@
   function pricingOptions(segment) {
     return OPTIONS.map(option => Object.assign({}, option, {
       origin: segment && segment.origin || option.origin,
-      destination: segment && segment.destination || option.destination
+      destination: segment && segment.destination || option.destination,
+      date: segment && segment.date || option.date
     }));
   }
   function quote(segment) {
