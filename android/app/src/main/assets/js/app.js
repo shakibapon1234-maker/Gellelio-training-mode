@@ -83,11 +83,17 @@ function renderHistory() {
 
 function openHistory() {
   renderHistory();
-  if (historyPanel) historyPanel.hidden = false;
+  if (historyPanel) {
+    historyPanel.hidden = false;
+    historyPanel.removeAttribute("hidden");
+  }
 }
 
 function closeHistory() {
-  if (historyPanel) historyPanel.hidden = true;
+  if (historyPanel) {
+    historyPanel.hidden = true;
+    historyPanel.setAttribute("hidden", "");
+  }
 }
 
 function sendHistorySelection() {
@@ -104,6 +110,14 @@ function deleteHistorySelection() {
   historyInput.selected = -1;
   renderHistory();
 }
+
+if (historyMenu) historyMenu.addEventListener("click", openHistory);
+if (historyPanel) historyPanel.addEventListener("click", function(e) {
+  if (e.target === historyPanel) closeHistory();
+});
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape" && historyPanel && !historyPanel.hidden) closeHistory();
+});
 
 function showTip(text, x, y) {
   if (!tipEl || !text) return;
