@@ -137,6 +137,7 @@
       }
 
       // ── AVAILABILITY: A01APRDACJED or A01APRDACJED*SV ──
+      if (cmd.endsWith("/") && cmd.startsWith("A")) return this.process(cmd.slice(0, -1));
       const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\*[A-Z]{1,3})?$/);
       if (avail) {
         const [, dateStr, orig, dest, pref] = avail;
@@ -157,7 +158,7 @@
 
         const day  = dayOfDate(dateStr);
         const pair = cityPair(orig, dest);
-        this.state.availHeader = `${day} ${dateStr}27        ${pair}        01/0000 01/2359`;
+        this.state.availHeader = `${day} ${dateStr}        ${pair}        01/0000 01/2359`;
         return this._availScreen();
       }
 

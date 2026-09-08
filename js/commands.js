@@ -133,6 +133,7 @@
       }
 
       // ── AVAILABILITY: A22JUNDACDXB  /  A22JUNDACDXB*EK  /  A22JUNDACDXB.D ──
+      if (cmd.endsWith("/") && cmd.startsWith("A")) return this.process(cmd.slice(0, -1));
       const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\*[A-Z]{2})?(\.D)?$/);
       if (avail) {
         const [, dateStr, orig, dest, pref] = avail;
@@ -153,7 +154,7 @@
 
         const day  = dayOfDate(dateStr);
         const pair = cityPair(orig, dest);
-        this.state.availHeader = `${day} ${dateStr}27        ${pair}        01/0000 01/2359`;
+        this.state.availHeader = `${day} ${dateStr}        ${pair}        01/0000 01/2359`;
         return this._availScreen();
       }
 

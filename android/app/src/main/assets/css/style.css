@@ -243,8 +243,10 @@ html, body {
   white-space: pre;
 }
 .fare-row { min-height: 19px; color: #e8e8e8; }
+.fare-row { position: relative; width: 100%; }
 .fare-label { color: #f1f1f1; }
 .fare-total { color: #39ff14; }
+.fare-total-value { position: absolute; right: 1ch; color: #39ff14; }
 .fare-flight { color: #18b8ff; }
 .fare-book { color: #00ff38; }
 .fare-actions { color: #18b8ff; }

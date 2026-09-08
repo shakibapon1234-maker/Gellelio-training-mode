@@ -214,7 +214,16 @@ function renderFare(resp) {
     if (/^\d+\s/.test(line)) row.classList.add("fare-flight");
     if (/^«BOOK»/.test(line)) row.classList.add("fare-book");
     if (/D  R/.test(line)) row.classList.add("fare-actions");
-    row.textContent = line || " ";
+    if (/TOTAL AMOUNT/.test(line)) {
+      const parts = line.split("TOTAL AMOUNT");
+      row.appendChild(document.createTextNode(parts[0] + "TOTAL AMOUNT"));
+      const total = document.createElement("span");
+      total.className = "fare-total-value";
+      total.textContent = parts[1].trim();
+      row.appendChild(total);
+    } else {
+      row.textContent = line || " ";
+    }
     output.appendChild(row);
   });
   terminal.appendChild(output);
