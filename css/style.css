@@ -80,6 +80,7 @@ html, body {
 
 .menu-bar span { cursor: pointer; white-space: nowrap; }
 .menu-bar span:hover { text-decoration: underline; }
+.menu-action { cursor: pointer; }
 
 /* ── Main workspace ── */
 .workspace {
@@ -400,6 +401,111 @@ html, body {
   text-align: center;
   padding: 3px;
   border-radius: 2px;
+}
+
+/* ── COMMAND HISTORY ── */
+.history-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.history-panel[hidden] { display: none; }
+
+.history-window {
+  width: min(480px, calc(100vw - 28px));
+  background: #f4f4f4;
+  border: 1px solid #777;
+  box-shadow: 3px 4px 12px rgba(0, 0, 0, 0.42);
+  padding: 10px 14px 16px;
+}
+
+.history-titlebar {
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #101820;
+  color: #fff;
+  padding: 0 8px 0 10px;
+  font: bold 12px Arial, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.history-close {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.history-close:hover { color: #ff7777; }
+
+.history-list {
+  height: min(430px, 52vh);
+  margin-top: 10px;
+  overflow-y: auto;
+  border: 1px solid #888;
+  background: #fff;
+  padding: 5px 8px;
+  color: #222;
+  font: 14px/1.9 Arial, sans-serif;
+  user-select: text;
+}
+
+.history-empty {
+  padding: 16px 3px;
+  color: #777;
+  font-style: italic;
+}
+
+.history-entry {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #222;
+  padding: 0 3px;
+  text-align: left;
+  font: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.history-entry:hover { background: #e3f2fb; }
+.history-entry.selected { background: #55a7d8; color: #fff; }
+
+.history-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.history-btn {
+  min-height: 37px;
+  border: 1px solid #76a8c4;
+  background: #72a9c6;
+  color: #fff;
+  padding: 0 16px;
+  font: bold 12px Arial, sans-serif;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.history-btn.primary { background: #164b69; border-color: #0d3044; }
+.history-btn:hover { filter: brightness(1.1); }
+
+@media (max-width: 520px) {
+  .history-actions { gap: 5px; }
+  .history-btn { padding: 0 8px; font-size: 10px; }
 }
 
 /* ── Responsive ── */

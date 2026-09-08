@@ -17,7 +17,7 @@
     </div>
   </header>
   <nav class="menu-bar">
-    <span>APPLICATION</span><span>TERMINAL</span><span>HISTORY</span><span>WINDOW</span>
+    <span>APPLICATION</span><span>TERMINAL</span><span id="historyMenu" class="menu-action">HISTORY</span><span>WINDOW</span>
     <span>PNR</span><span>SEARCH</span><span>SELL</span><span>TOOLS</span><span>HELP</span>
   </nav>
   <main class="workspace">
@@ -94,6 +94,21 @@ CREATE OR RETRIEVE FIRST</div>
       <span>&#8226;&#8226;&#8226;</span>
     </div>
   </main>
+
+  <section id="historyPanel" class="history-panel" hidden aria-labelledby="historyTitle">
+    <div class="history-window">
+      <div class="history-titlebar">
+        <span id="historyTitle">COMMAND HISTORY</span>
+        <button id="historyClose" class="history-close" type="button" aria-label="Close history">&#215;</button>
+      </div>
+      <div id="historyList" class="history-list" role="listbox" aria-label="Command history"></div>
+      <div class="history-actions">
+        <button id="historySend" class="history-btn primary" type="button">SEND</button>
+        <button id="historyOptions" class="history-btn" type="button">OPTIONS</button>
+        <button id="historyDelete" class="history-btn" type="button">DELETE SELECTED</button>
+      </div>
+    </div>
+  </section>
 
   <script src="js/airports.js"></script>
   <script src="js/flights.js"></script>

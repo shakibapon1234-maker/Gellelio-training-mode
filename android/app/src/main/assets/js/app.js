@@ -12,6 +12,10 @@ const pnrSummary = document.getElementById("pnrSummary");
 const statusSpan = document.getElementById("sessionStatus");
 const officeSpan = document.getElementById("officeLabel");
 const tipEl      = document.getElementById("flightTip");
+const historyPanel = document.getElementById("historyPanel");
+const historyList = document.getElementById("historyList");
+const historyMenu = document.getElementById("historyMenu");
+const historyInput = { selected: -1 };
 
 const engine = new GalileoCommandEngine();
 let histIdx = -1;
@@ -48,6 +52,57 @@ function printEcho(cmd) {
 
 function hideTip() {
   if (tipEl) tipEl.hidden = true;
+}
+
+function renderHistory() {
+  if (!historyList) return;
+  historyList.innerHTML = "";
+  const entries = engine.state.history || [];
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "history-empty";
+    empty.textContent = "NO COMMANDS IN HISTORY";
+    historyList.appendChild(empty);
+    historyInput.selected = -1;
+    return;
+  }
+  entries.slice().reverse().forEach(function(command, displayIndex) {
+    const sourceIndex = entries.length - 1 - displayIndex;
+    const entry = document.createElement("button");
+    entry.type = "button";
+    entry.className = "history-entry" + (sourceIndex === historyInput.selected ? " selected" : "");
+    entry.dataset.historyIndex = String(sourceIndex);
+    entry.textContent = command;
+    entry.addEventListener("click", function() {
+      historyInput.selected = sourceIndex;
+      renderHistory();
+    });
+    historyList.appendChild(entry);
+  });
+}
+
+function openHistory() {
+  renderHistory();
+  if (historyPanel) historyPanel.hidden = false;
+}
+
+function closeHistory() {
+  if (historyPanel) historyPanel.hidden = true;
+}
+
+function sendHistorySelection() {
+  const command = engine.state.history[historyInput.selected];
+  if (!command) return;
+  closeHistory();
+  processCommand(command);
+  inputEl.focus();
+}
+
+function deleteHistorySelection() {
+  if (historyInput.selected < 0) return;
+  engine.state.history.splice(historyInput.selected, 1);
+  historyInput.selected = -1;
+  renderHistory();
 }
 
 function showTip(text, x, y) {
@@ -250,6 +305,29 @@ inputEl.addEventListener("keydown", function(e) {
 });
 
 document.addEventListener("click", function(e) {
+  if (e.target.closest("#historyMenu")) {
+    openHistory();
+    return;
+  }
+  if (e.target.closest("#historyClose")) {
+    closeHistory();
+    return;
+  }
+  if (e.target.closest("#historySend")) {
+    sendHistorySelection();
+    return;
+  }
+  if (e.target.closest("#historyDelete")) {
+    deleteHistorySelection();
+    return;
+  }
+  if (e.target.closest("#historyOptions")) {
+    return;
+  }
+  if (historyPanel && e.target === historyPanel) {
+    closeHistory();
+    return;
+  }
   const btn = e.target.closest(".left-btn");
   if (btn && btn.dataset.cmd) {
     processCommand(btn.dataset.cmd);
@@ -270,6 +348,7 @@ terminal.addEventListener("mouseleave", hideTip);
 
 function reset() {
   engine.reset();
+  historyInput.selected = -1;
   lastCommand = "";
   setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
   setScreen("GELLELIO GALILEO TRAINING SIMULATOR\nTRAINING ENVIRONMENT - OFFLINE PRACTICE\n\nSign in: SON/DEMO/DEMO   |   Help: HELP\nType at the > prompt above. Scroll or MD/MU to move the display.");
