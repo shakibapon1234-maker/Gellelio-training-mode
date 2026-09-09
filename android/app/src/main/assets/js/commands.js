@@ -231,6 +231,10 @@
       }
 
       // ── TICKETING TL: T-01APR ──
+      if (cmd === "T.T*" || cmd.startsWith("T.T*")) {
+        this.state.ticketing = "T.T*";
+        return { lines: ["T.T*"] };
+      }
       if (cmd.startsWith("T-")) {
         this.state.ticketing = cmd.slice(2);
         return { lines: [`TL ${this.state.ticketing}`] };
@@ -259,6 +263,16 @@
           this.state.ticketing ? `TL ${this.state.ticketing}` : "",
           this.state.phones.length ? `AP ${this.state.phones[0]}` : ""
         ].filter(l => l !== "") };
+      }
+
+      // ── PNR quick displays ──
+      if (cmd === "*P") {
+        if (!this.state.phones.length) return this.error("NO PHONE FIELD IN PNR");
+        return { lines: this.state.phones.map((phone, index) => (index + 1) + ". AP " + phone.toUpperCase()), kind: "pnr" };
+      }
+      if (cmd === "*TD") {
+        if (!this.state.ticketing) return this.error("NO TICKETING FIELD IN PNR");
+        return { lines: ["TL " + this.state.ticketing], kind: "pnr" };
       }
 
       // ── RETRIEVE PNR: *LOCATOR ──

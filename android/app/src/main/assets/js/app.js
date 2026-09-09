@@ -349,6 +349,21 @@ function renderLeftSegment(seg, notes) {
   if (leftBtns) leftBtns.style.display = "flex";
 }
 
+function refreshLeftButtons() {
+  if (!leftBtns) return;
+  const s = engine.state;
+  if (!s.segments || !s.segments.length) {
+    leftBtns.style.display = "none";
+    return;
+  }
+  const commands = ["*ALL"];
+  if (s.phones && s.phones.length) commands.push("*P");
+  if (s.ticketing) commands.push("*TD");
+  commands.push("*RV");
+  leftBtns.innerHTML = commands.map(function(command) { return '<button class="left-btn" data-cmd="' + command + '">' + command + '</button>'; }).join("");
+  leftBtns.style.display = "flex";
+}
+
 function updateTab() {
   if (!tabLabel) return;
   tabLabel.textContent = lastCommand ? ("1-" + lastCommand) : "1->";
@@ -398,6 +413,7 @@ function update() {
   if (officeSpan) officeSpan.textContent = s.signedIn ? ("OFFICE: " + (s.officeId || "DACVS086JJ")) : "GALILEO TRAINING";
   updateTab();
   updatePNR();
+  refreshLeftButtons();
   mark();
   persistHistory();
 }

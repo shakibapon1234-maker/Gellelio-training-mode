@@ -31,6 +31,8 @@ function testBooking(context) {
   assert(run("N/DOE/JOHN MR").lines[0].includes("DOE/JOHN"));
   run("9/8801712345678");
   run("T.T*");
+  assert(run("*P").lines[0].includes("8801712345678"));
+  assert(run("*TD").lines[0].includes("T.T*"));
   run("R.H");
   const saved = run("ER");
   assert(saved.lines[0].includes("RLR"));

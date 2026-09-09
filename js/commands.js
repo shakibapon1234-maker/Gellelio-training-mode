@@ -269,6 +269,16 @@
         ].filter(l => l !== "") };
       }
 
+      // ── PNR quick displays ──
+      if (cmd === "*P") {
+        if (!this.state.phones.length) return this.error("NO PHONE FIELD IN PNR");
+        return { lines: this.state.phones.map((phone, index) => (index + 1) + ". AP " + phone.toUpperCase()), kind: "pnr" };
+      }
+      if (cmd === "*TD") {
+        if (!this.state.ticketing) return this.error("NO TICKETING FIELD IN PNR");
+        return { lines: ["TL " + this.state.ticketing], kind: "pnr" };
+      }
+
       // ── RETRIEVE PNR: *LOCATOR ──
       if (cmd.startsWith("*") && !cmd.startsWith("*ALL") && !cmd.startsWith("*RV")) {
         const loc = cmd.slice(1);
