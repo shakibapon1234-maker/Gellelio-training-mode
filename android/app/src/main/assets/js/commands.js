@@ -212,12 +212,15 @@
       }
 
       // ── NAME: N/SURNAME/FIRSTNAME TITLE ──
-      if (cmd.startsWith("N/")) {
-        const val = raw.trim().slice(2); // preserve original case for name
-        if (!val.includes("/")) return this.error("FORMAT: N/SURNAME/FIRSTNAME TITLE");
-        const nameFormatted = `1-N/${val.toUpperCase()}`;
+      const directName = raw.trim();
+      const isNameCommand = cmd.startsWith("N.") || cmd.startsWith("N/") ||
+        /^[A-Z][A-Z .'-]*\/[A-Z][A-Z .'-]*\s+(?:MR|MRS|MS|MISS|MSTR|CHD|INF)$/i.test(directName);
+      if (isNameCommand) {
+        const val = (cmd.startsWith("N.") || cmd.startsWith("N/")) ? directName.slice(2).trim() : directName;
+        if (!/^[A-Z][A-Z .'-]*\/[A-Z][A-Z .'-]*(?:\s+(?:MR|MRS|MS|MISS|MSTR|CHD|INF))?$/i.test(val)) return this.error("CHECK FORMAT - USE: N.NAPON/SHAKIB MR");
+        const nameFormatted = (this.state.names.length + 1) + "-" + val.toUpperCase();
         this.state.names.push(nameFormatted);
-        return { lines: [`${nameFormatted}`], kind: "" };
+        return { lines: [nameFormatted], kind: "name" };
       }
 
       // ── PHONE: 9/MOBILE-BD/88017XXXXXXX or 9/88017XXXXXXX ──

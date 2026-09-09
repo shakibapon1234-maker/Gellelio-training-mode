@@ -200,7 +200,7 @@
         depart: ["0200", "1340", "1300", "2105", "0825", "1620", "0050", "0910", "2355", "0815", "1230", "2105", "0825", "1520", "1730"][index],
         arrive: ["0530", "1710", "1850", "2210", "1420", "1740", "0650", "1020", "0600", "0935", "1840", "2210", "1420", "1545", "1900"][index],
         equip: flight[2], termOrig: "1", termDest: "1", airline_full: "TRAINING CARRIER",
-        classes: { C: 9, D: 9, J: 9, Z: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9 }, rows: ["T9 K9 S9 V9 W9 LC", "H9 Q9 T9 K9 S9 V9 W9"], notes: []
+        classes: { C: 9, D: 9, J: 9, Z: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9, T: 9, K: 9, S: 9, V: 9, W: 9, L: 9, G: 9, R: 9, U: 9 }, rows: ["T9 K9 S9 V9 W9 LC", "H9 Q9 T9 K9 S9 V9 W9"], notes: []
       }));
     } else if (origin === "DAC" && destination === "JED") {
       results = FLIGHTS.slice();
@@ -219,7 +219,7 @@
       ].map((flight, index) => ({
         line: index + 1, carrier: flight[0], number: flight[1], date: "15NOV", freq: "15",
         origin, destination, depart: flight[3], arrive: flight[4], equip: flight[2],
-        classes: { J: 9, C: 9, D: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9 },
+        classes: { J: 9, C: 9, D: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9, T: 9, K: 9, S: 9, V: 9, W: 9, L: 9, G: 9, R: 9, U: 9 },
         rows: ["T9 K9 S9 V9 W9 LC", "H9 Q9 T9 K9 S9 V9 W9"], notes: []
       }));
     }

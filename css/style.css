@@ -69,7 +69,7 @@ html, body {
   height: 26px;
   background: #f0f0f0;
   color: #333;
-  padding-left: clamp(360px, 46vw, 900px);
+  padding-left: 46%;
   display: flex;
   gap: 14px;
   align-items: center;
@@ -87,7 +87,7 @@ html, body {
   height: calc(100vh - 68px);
   max-height: calc(100vh - 68px);
   display: grid;
-  grid-template-columns: minmax(360px, 46%) minmax(0, 1fr) 70px;
+  grid-template-columns: minmax(280px, 46%) minmax(0, 1fr) 70px;
   grid-template-rows: minmax(0, 1fr);
   position: relative;
   overflow: hidden;
@@ -106,104 +106,42 @@ html, body {
   min-width: 0;
 }
 
-.left-pane-head {
-  height: 31px;
-  padding: 0 14px;
-  background: #111b24;
-  border-bottom: 1px solid #263744;
-  color: #8db9d1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: 0 0 auto;
-  font: 11px Arial, sans-serif;
-  letter-spacing: .08em;
-}
-
-.left-pane-head b { color: #65cf8b; font-size: 10px; }
-
 .left-message {
-  min-height: 150px;
-  max-height: 37%;
-  padding: 24px 14px 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 30px 40px 14px;
   font: 13px/1.5 Consolas, monospace;
   color: #e0e0e0;
   white-space: pre-wrap;
   overflow-y: auto;
 }
 
-.left-workspace {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 12px 14px;
-  display: grid;
-  grid-template-rows: minmax(74px, auto) minmax(74px, auto) minmax(0, 1fr);
-  gap: 10px;
-  background: linear-gradient(180deg, #050505 0%, #0a0d0f 100%);
-  overflow: auto;
-}
-
-.workspace-card {
-  border: 1px solid #26333b;
-  border-left: 3px solid #3986a8;
-  background: #0d1317;
-  padding: 10px 11px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-}
-
-.command-card { border-left-color: #d2ae37; }
-.workspace-label { color: #7f9baa; font: 10px Arial, sans-serif; letter-spacing: .08em; }
-.workspace-card strong { color: #e9f2f7; font: 13px Consolas, monospace; overflow-wrap: anywhere; }
-.workspace-card small { color: #9ba7ad; font: 11px/1.35 Arial, sans-serif; }
-
-.quick-commands {
-  border: 1px solid #26333b;
-  background: #0d1317;
-  padding: 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-}
-
-.quick-command {
-  border: 1px solid #344a56;
-  background: #17232b;
-  color: #cfe5ef;
-  padding: 8px 10px;
-  text-align: left;
-  font: 11px Consolas, monospace;
-  cursor: pointer;
-}
-
-.quick-command:hover { background: #24536a; border-color: #61a7c7; color: #fff; }
+.left-segment { flex: 0 0 auto; padding: 16px 32px 0; background: #000; }
+.left-segment-header { min-height: 28px; color: #e7e7e7; font: 16px/1.45 Consolas, monospace; white-space: pre; }
+.left-segment-header .segment-number { color: #45e945; }
+.left-segment-header .segment-airline { color: #29b8f7; }
+.left-segment-header .segment-class { color: #45e945; }
+.left-segment-notes { margin: 0 0 18px; padding: 44px 14px 38px; background: #888; color: #fff; font: 15px/1.52 Consolas, monospace; white-space: pre-wrap; }
 
 /* *ALL and *RV buttons */
 .left-btns {
   display: flex;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 0 40px 28px;
   background: #000;
 }
 
 .left-btn {
-  background: #1a1a1a;
-  color: #d4d4d4;
-  border: 1px solid #555;
-  font: 13px Consolas, monospace;
-  padding: 4px 14px;
+  background: #d0d0d0;
+  color: #fff;
+  border: 0;
+  font: 16px Consolas, monospace;
+  padding: 10px 14px;
   cursor: pointer;
   letter-spacing: 0.03em;
 }
 
-.left-btn:hover {
-  background: #2a2a2a;
-  border-color: #888;
-  color: #fff;
-}
+.left-btn:hover { background: #9c9c9c; }
 
 .left-btn:active {
   background: #48b5ec;
@@ -273,9 +211,9 @@ html, body {
   min-height: 0;
   background: #000;
   color: #e0e0e0;
-  padding: 4px 8px 10px;
+  padding: 4px 0 10px 8px;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   font: 13px/1.32 Consolas, monospace;
   user-select: text;
   scrollbar-width: thin;
@@ -357,6 +295,7 @@ html, body {
 .gds-eq { color: #e8e8e8; }
 .gds-flag { color: #c8c8c8; }
 .gds-row2 { color: #9a9a9a; }
+.class-continuation { padding-left: 2ch; }
 .gds-b, .gds-more {
   color: #3cff7a;
   cursor: pointer;

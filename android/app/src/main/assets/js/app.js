@@ -6,11 +6,9 @@ const inputEl    = document.getElementById("commandInput");
 const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
-const leftState  = document.getElementById("leftState");
-const leftCommand = document.getElementById("leftCommand");
-const leftHint = document.getElementById("leftHint");
-const leftRecord = document.getElementById("leftRecord");
-const leftRecordDetail = document.getElementById("leftRecordDetail");
+const leftSegment = document.getElementById("leftSegment");
+const leftSegmentHeader = document.getElementById("leftSegmentHeader");
+const leftSegmentNotes = document.getElementById("leftSegmentNotes");
 const tabLabel   = document.getElementById("tabLabel");
 const locBadge   = document.getElementById("locatorBadge");
 const pnrSummary = document.getElementById("pnrSummary");
@@ -208,7 +206,8 @@ function renderAvailability(resp) {
       span("gds-al", parts.carrier + " "),
       span("gds-fn", parts.number + "  ")
     );
-    Object.entries(f.classes || {}).forEach(function(entry) {
+    const classEntries = Object.entries(f.classes || {});
+    function appendClass(entry, target) {
       const bookingClass = entry[0];
       const availability = entry[1];
       const classButton = document.createElement("button");
@@ -223,15 +222,25 @@ function renderAvailability(resp) {
         showFlightDetails(f, bookingClass);
         openBrands(f, bookingClass);
       });
-      line.appendChild(classButton);
-      line.appendChild(document.createTextNode(" "));
-    });
+      target.appendChild(classButton);
+      target.appendChild(document.createTextNode(" "));
+    }
+    classEntries.slice(0, 14).forEach(function(entry) { appendClass(entry, line); });
     line.append(span("gds-eq", parts.equip + " "), span("gds-flag", parts.flag));
     line.addEventListener("click", function() {
       const defaultClass = Object.keys(f.classes || {})[0];
       if (defaultClass) showFlightDetails(f, defaultClass);
     });
     block.appendChild(line);
+
+    const remainingClasses = classEntries.slice(14);
+    if (remainingClasses.length) {
+      const classLine = document.createElement("div");
+      classLine.className = "avail-line class-continuation";
+      classLine.appendChild(document.createTextNode("     "));
+      remainingClasses.forEach(function(entry) { appendClass(entry, classLine); });
+      block.appendChild(classLine);
+    }
 
     (f.rows || []).forEach(function(row) {
       const r2 = document.createElement("div");
@@ -318,13 +327,26 @@ function bookFareShopOption(index) {
   engine.state.segments = [segment]; engine.state.priced = true;
   const sold = ["************************ SOLD SEGMENTS ************************", " 1. " + segment.carrier + "  " + segment.number + " " + segment.soldClass + " " + segment.date + " " + segment.origin + segment.destination + " " + segment.status + " " + segment.depart + " " + segment.arrive + "       E", "DEPARTS " + segment.origin + " TERMINAL 1", "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION", "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES", "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES", "", "************************* FILED FARE *************************", "FARE OPTION " + (index + 1) + " SELECTED - TOTAL BDT " + (option.partyTotal || option.total), "NO PLATING CARRIER FOUND"];
   setScreen(sold.join("\n"));
-  setLeftPane(["1. " + segment.carrier + " " + segment.number + " " + segment.soldClass + " " + segment.date + " " + segment.origin + segment.destination + " HS1 " + segment.depart + " " + segment.arrive, ""].concat(segment.notes), true);
+  renderLeftSegment(segment, segment.notes);
   update(); inputEl.focus();
 }
 
 function setLeftPane(lines, showButtons) {
   if (leftMsg) leftMsg.textContent = lines.join("\n");
+  if (leftMsg) leftMsg.hidden = false;
   if (leftBtns) leftBtns.style.display = showButtons ? "flex" : "none";
+  if (leftSegment) leftSegment.hidden = true;
+}
+
+function renderLeftSegment(seg, notes) {
+  if (!seg || !leftSegment || !leftSegmentHeader || !leftSegmentNotes) return;
+  const status = "HS" + (seg.paxCount || 1);
+  leftSegmentHeader.innerHTML = '<span class="segment-number">' + seg.segNum + '.</span>  <span class="segment-airline">' + seg.carrier + '</span>  ' + seg.number + '  <span class="segment-class">' + seg.soldClass + '</span>' + (seg.paxCount || 1) + '  ' + seg.date + '  <span class="segment-airline">' + seg.origin + seg.destination + '</span>  ' + status + '  ' + seg.depart + '  ' + seg.arrive + '  O';
+  leftSegmentNotes.textContent = (notes && notes.length ? notes : ["ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION", "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES", "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"]).join("\n");
+  if (leftMsg) leftMsg.hidden = true;
+  leftSegmentNotes.hidden = false;
+  leftSegment.hidden = false;
+  if (leftBtns) leftBtns.style.display = "flex";
 }
 
 function updateTab() {
@@ -370,38 +392,12 @@ function updatePNR() {
     (s.issued ? "<br><b class='issued'>TICKET ISSUED</b>" : "");
 }
 
-function updateLeftWorkspace() {
-  const s = engine.state;
-  const command = lastCommand || "READY FOR ENTRY";
-  if (leftCommand) leftCommand.textContent = command;
-  if (leftState) leftState.textContent = s.signedIn ? "SIGNED IN" : "READY";
-  if (leftHint) {
-    if (!lastCommand) leftHint.textContent = "Enter a Galileo command in the terminal.";
-    else if (s.availability) leftHint.textContent = "Select a class to view details, or enter a sell command.";
-    else if (s.segments && s.segments.length) leftHint.textContent = "Continue the PNR or use *ALL to review the booking.";
-    else leftHint.textContent = "Command processed. Continue with the next training step.";
-  }
-  if (!leftRecord || !leftRecordDetail) return;
-  const segment = s.segments && s.segments[0];
-  if (s.locator) {
-    leftRecord.textContent = "PNR " + s.locator;
-    leftRecordDetail.textContent = segment ? segment.carrier + segment.number + " " + segment.origin + "-" + segment.destination : "Booking saved and ready to retrieve.";
-  } else if (segment) {
-    leftRecord.textContent = "UNSAVED ITINERARY";
-    leftRecordDetail.textContent = segment.carrier + segment.number + " " + segment.origin + "-" + segment.destination + ". Add passenger details and end transact.";
-  } else {
-    leftRecord.textContent = "NO ACTIVE PNR";
-    leftRecordDetail.textContent = "Create or retrieve a booking to display its details.";
-  }
-}
-
 function update() {
   const s = engine.state;
   if (statusSpan) statusSpan.textContent = s.signedIn ? "SIGNED IN" : "OFFLINE";
   if (officeSpan) officeSpan.textContent = s.signedIn ? ("OFFICE: " + (s.officeId || "DACVS086JJ")) : "GALILEO TRAINING";
   updateTab();
   updatePNR();
-  updateLeftWorkspace();
   mark();
   persistHistory();
 }
@@ -413,7 +409,7 @@ function processCommand(raw) {
   const nav = cmd.toUpperCase();
   const isNav = nav === "MD" || nav === "MU" || nav === "MT" || nav === "MB";
   if (!isNav) lastCommand = cmd.toUpperCase();
-  if (!isNav) setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
+  if (!isNav && !engine.state.segments.length) setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
 
   if (cmd.toUpperCase().startsWith("LESSON ")) {
     const lesson = GalileoLessons.get(cmd.slice(7));
@@ -439,14 +435,17 @@ function processCommand(raw) {
     try { localStorage.removeItem(HISTORY_KEY); } catch (_) {}
   }
 
-  if (resp.segment && resp.leftPaneNotes && resp.leftPaneNotes.length) {
+  if (resp.segment) {
     const seg = resp.segment;
-    const hdr = seg.segNum + ". " + seg.carrier + " " + seg.number + " " + seg.soldClass + " " + seg.date + " " + seg.origin + seg.destination + " HS" + seg.paxCount + " " + seg.depart + " " + seg.arrive + " O  " + (resp.lines[0] ? resp.lines[0].slice(-3) : "");
-    setLeftPane([hdr, ""].concat(resp.leftPaneNotes), true);
+    renderLeftSegment(seg, resp.leftPaneNotes);
   }
+  if (resp.kind === "name" && leftSegmentNotes) leftSegmentNotes.hidden = true;
 
   if (resp.kind === "avail" && resp.flights) {
     renderAvailability(resp);
+  } else if ((resp.kind === "sell" || resp.kind === "name") && engine.state.availability && engine.state.results.length) {
+    // Keep the searched flights visible after selling, as in Smartpoint.
+    renderAvailability(engine._availScreen());
   } else if (resp.kind === "fare") {
     renderFare(resp);
   } else if (resp.lines && resp.lines.length) {
@@ -501,7 +500,7 @@ document.addEventListener("click", function(e) {
     closeHistory();
     return;
   }
-  const btn = e.target.closest(".left-btn, .quick-command");
+  const btn = e.target.closest(".left-btn");
   if (btn && btn.dataset.cmd) {
     processCommand(btn.dataset.cmd);
     inputEl.focus();

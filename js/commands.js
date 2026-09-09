@@ -200,13 +200,15 @@
       }
 
       // ── NAME: N.RAHMAN/MD HAFIZUR MR  (also N/ from live Smartpoint) ──
-      if (cmd.startsWith("N.") || cmd.startsWith("N/")) {
-        const val = raw.trim().slice(2);
-        if (!val.includes("/")) return this.error("CHECK FORMAT");
-        const prefix = cmd.startsWith("N.") ? "N." : "N/";
-        const nameFormatted = (this.state.names.length + 1) + "-" + prefix + val.toUpperCase();
+      const directName = raw.trim();
+      const isNameCommand = cmd.startsWith("N.") || cmd.startsWith("N/") ||
+        /^[A-Z][A-Z .'-]*\/[A-Z][A-Z .'-]*\s+(?:MR|MRS|MS|MISS|MSTR|CHD|INF)$/i.test(directName);
+      if (isNameCommand) {
+        const val = (cmd.startsWith("N.") || cmd.startsWith("N/")) ? directName.slice(2).trim() : directName;
+        if (!/^[A-Z][A-Z .'-]*\/[A-Z][A-Z .'-]*(?:\s+(?:MR|MRS|MS|MISS|MSTR|CHD|INF))?$/i.test(val)) return this.error("CHECK FORMAT - USE: N.NAPON/SHAKIB MR");
+        const nameFormatted = (this.state.names.length + 1) + "-" + val.toUpperCase();
         this.state.names.push(nameFormatted);
-        return { lines: [nameFormatted], kind: "" };
+        return { lines: [nameFormatted], kind: "name" };
       }
 
       // ── PHONE: P.T*WINGS FLY ... REF HAFIZ 01618000488 ──
