@@ -28,19 +28,51 @@ function testBooking(context) {
   const sell = run("N1Y1");
   assert.strictEqual(sell.kind, "sell");
   assert(sell.lines[0].includes("SV"));
-  assert(run("N/DOE/JOHN MR").lines[0].includes("DOE/JOHN"));
-  run("9/8801712345678");
+  const name = run("N/DOE/JOHN MR");
+  assert(name.lines[0].includes("N/DOE/JOHN MR"));
+  assert(name.lines.some(line => line.includes("SOLD SEGMENTS")));
+  const contact = run("P.T* WINGS FLY REF SHAKIB 01757208244 *");
+  assert(contact.lines[0].includes("WINGS FLY REF SHAKIB 01757208244 *"));
+  const contactAlias = run("P.P* ANY FREE TEXT");
+  assert(contactAlias.lines[0].includes("ANY FREE TEXT"));
   run("T.T*");
-  assert(run("*P").lines[0].includes("8801712345678"));
+  assert(run("*P").lines[0].includes("WINGS FLY REF SHAKIB 01757208244 *"));
   assert(run("*TD").lines[0].includes("T.T*"));
   run("R.H");
   const saved = run("ER");
-  assert(saved.lines[0].includes("RLR"));
+  assert.strictEqual(saved.clearTerminal, true);
   assert(engine.state.locator);
+  assert.strictEqual(engine.state.saved, true);
   const fare = run("FQ");
   assert(fare.lines.some(line => line.includes("TOTAL")));
   assert(run("FXP").lines[0].includes("TST"));
   assert(run("TKPFS/DTDAD").lines[0].includes("ETK ISSUED"));
+
+  const discard = new context.GalileoCommandEngine();
+  const discardRun = command => discard.process(command);
+  discardRun("SON/DEMO/DEMO");
+  discardRun("A01APRDACJED");
+  discardRun("N1Y1");
+  discardRun("N/DOE/JOHN MR");
+  assert.strictEqual(discardRun("I").kind, "ignore");
+  assert.strictEqual(discard.state.segments.length, 0);
+  assert.strictEqual(discard.state.names.length, 0);
+
+  const restore = new context.GalileoCommandEngine();
+  const restoreRun = command => restore.process(command);
+  restoreRun("SON/DEMO/DEMO");
+  restoreRun("A01APRDACJED");
+  restoreRun("N1Y1");
+  restoreRun("N/DOE/JOHN MR");
+  restoreRun("P.T*WINGS FLY REF SHAKIB 01757208244");
+  restoreRun("T.T*");
+  restoreRun("R.H");
+  restoreRun("ER");
+  restoreRun("SI.SSR MEAL");
+  const ignored = restoreRun("I");
+  assert(ignored.lines[0].includes("SAVED PNR RESTORED"));
+  assert.strictEqual(restore.state.ssr.length, 0);
+  assert.strictEqual(restore.state.names[0], "1-DOE/JOHN MR");
 }
 
 const roots = [path.resolve(__dirname, "..")];

@@ -7,6 +7,7 @@ const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
 const leftSegment = document.getElementById("leftSegment");
+const leftPassenger = document.getElementById("leftPassenger");
 const leftSegmentHeader = document.getElementById("leftSegmentHeader");
 const leftSegmentNotes = document.getElementById("leftSegmentNotes");
 const tabLabel   = document.getElementById("tabLabel");
@@ -336,6 +337,14 @@ function setLeftPane(lines, showButtons) {
   if (leftMsg) leftMsg.hidden = false;
   if (leftBtns) leftBtns.style.display = showButtons ? "flex" : "none";
   if (leftSegment) leftSegment.hidden = true;
+  if (leftPassenger) leftPassenger.hidden = true;
+}
+
+function refreshLeftPassenger() {
+  if (!leftPassenger) return;
+  const name = engine.state.names && engine.state.names[0];
+  leftPassenger.textContent = name || "";
+  leftPassenger.hidden = !name;
 }
 
 function renderLeftSegment(seg, notes) {
@@ -414,6 +423,7 @@ function update() {
   updateTab();
   updatePNR();
   refreshLeftButtons();
+  refreshLeftPassenger();
   mark();
   persistHistory();
 }
@@ -446,6 +456,8 @@ function processCommand(raw) {
 
   const resp = engine.process(cmd);
 
+  if (resp.clearTerminal) clearScreen();
+
   if (cmd.toUpperCase() === "SOF") {
     engine.state.history = [];
     try { localStorage.removeItem(HISTORY_KEY); } catch (_) {}
@@ -457,9 +469,19 @@ function processCommand(raw) {
   }
   if (resp.kind === "name" && leftSegmentNotes) leftSegmentNotes.hidden = true;
 
+  if (resp.kind === "ignore") {
+    if (engine.state.segments && engine.state.segments.length) {
+      const seg = engine.state.segments[0];
+      renderLeftSegment(seg, seg.notes || []);
+      if (leftSegmentNotes) leftSegmentNotes.hidden = false;
+    } else {
+      setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
+    }
+  }
+
   if (resp.kind === "avail" && resp.flights) {
     renderAvailability(resp);
-  } else if ((resp.kind === "sell" || resp.kind === "name") && engine.state.availability && engine.state.results.length) {
+  } else if (resp.kind === "sell" && engine.state.availability && engine.state.results.length) {
     // Keep the searched flights visible after selling, as in Smartpoint.
     renderAvailability(engine._availScreen());
   } else if (resp.kind === "fare") {

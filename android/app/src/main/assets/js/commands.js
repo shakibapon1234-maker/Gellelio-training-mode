@@ -32,6 +32,7 @@
       storedFare: false,
       issued: false,
       saved: false,
+      savedPnr: null,
       ssr: [],
       osk: [],               // OSI remarks
       history: [],
@@ -220,7 +221,29 @@
         if (!/^[A-Z][A-Z .'-]*\/[A-Z][A-Z .'-]*(?:\s+(?:MR|MRS|MS|MISS|MSTR|CHD|INF))?$/i.test(val)) return this.error("CHECK FORMAT - USE: N.NAPON/SHAKIB MR");
         const nameFormatted = (this.state.names.length + 1) + "-" + val.toUpperCase();
         this.state.names.push(nameFormatted);
-        return { lines: [nameFormatted], kind: "name" };
+        const segment = this.state.segments[0];
+        if (!segment) return { lines: [nameFormatted], kind: "name" };
+        const notes = (segment.notes || []).filter(line => /^(DEPARTS|ADD ADVANCE|PERSONAL DATA|WITH YOUR TRAVEL|FOR BORDER)/.test(line));
+        return {
+          lines: [
+            ">" + raw.trim().toUpperCase(),
+            "*************************** SOLD SEGMENTS ***************************",
+            `1. ${segment.carrier}  ${segment.number}  ${segment.soldClass}  ${segment.date} ${segment.origin}${segment.destination} HS ${segment.depart}  ${segment.arrive}`,
+            ...notes,
+            "",
+            "***************************** FILED FARE *****************************",
+            "NO PLATING CARRIER FOUND"
+          ],
+          kind: "name"
+        };
+      }
+
+      // ── PHONE / AGENCY REFERENCE: only P.T* is fixed; its contents are free text. ──
+      if (cmd.startsWith("P.T*") || cmd.startsWith("P.P*")) {
+        const phone = raw.trim().slice(4).trim();
+        if (!phone) return this.error("CHECK FORMAT - ENTER TEXT AFTER P.T*");
+        this.state.phones.push(phone);
+        return { lines: ["P.T*" + phone.toUpperCase()] };
       }
 
       // ── PHONE: 9/MOBILE-BD/88017XXXXXXX or 9/88017XXXXXXX ──
@@ -252,17 +275,22 @@
         if (!this.state.names.length)    return this.error("NO PASSENGER NAME - ADD WITH N/SURNAME/FIRSTNAME TITLE");
         this.state.saved   = true;
         this.state.locator = genLocator();
-        const seg  = this.state.segments[0];
-        const name = this.state.names[0];
-        return { lines: [
-          `--- RLR ---`,
-          `RP/${this.state.officeId || "DACVS086JJ"}/${this.state.officeId || "DACVS086JJ"}              ${this.state.receivedFrom || "TRAINING"}/SU`,
-          `${this.state.locator}`,
-          `${name}`,
-          `${seg.segNum} ${seg.carrier} ${seg.number} ${seg.soldClass} ${seg.date} ${seg.origin}${seg.destination} HK${seg.paxCount} ${seg.depart} ${seg.arrive}   #`,
-          this.state.ticketing ? `TL ${this.state.ticketing}` : "",
-          this.state.phones.length ? `AP ${this.state.phones[0]}` : ""
-        ].filter(l => l !== "") };
+        this.state.savedPnr = clone({
+          segments: this.state.segments,
+          names: this.state.names,
+          phones: this.state.phones,
+          ticketing: this.state.ticketing,
+          receivedFrom: this.state.receivedFrom,
+          locator: this.state.locator,
+          priced: this.state.priced,
+          fare: this.state.fare,
+          storedFare: this.state.storedFare,
+          issued: this.state.issued,
+          saved: true,
+          ssr: this.state.ssr,
+          osk: this.state.osk
+        });
+        return { lines: [], kind: "end", clearTerminal: true };
       }
 
       // ── PNR quick displays ──
@@ -393,15 +421,21 @@
       }
 
       // ── IGNORE: IG ──
-      if (cmd === "IG") {
+      if (cmd === "I" || cmd === "IG") {
         const signedIn = this.state.signedIn;
         const officeId = this.state.officeId;
         const history = this.state.history;
+        const savedPnr = this.state.savedPnr ? clone(this.state.savedPnr) : null;
         this.reset();
         this.state.signedIn = signedIn;
         this.state.officeId = officeId;
         this.state.history = history;
-        return { lines: ["IGNORED - CHANGES DISCARDED"] };
+        if (savedPnr) Object.assign(this.state, savedPnr, { savedPnr });
+        return {
+          lines: [savedPnr ? "IGNORED - CHANGES DISCARDED - SAVED PNR RESTORED" : "IGNORED - CHANGES DISCARDED"],
+          kind: "ignore",
+          ignoredToSavedPNR: !!savedPnr
+        };
       }
 
       return this.error("UNABLE TO PROCESS - TYPE HELP FOR AVAILABLE COMMANDS");

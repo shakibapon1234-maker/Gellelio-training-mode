@@ -116,7 +116,7 @@ html, body {
   overflow-y: auto;
 }
 
-.left-segment { flex: 0 0 auto; padding: 16px 32px 0; background: #000; }.left-segment-header { min-height: 28px; color: #e7e7e7; font: 16px/1.45 Consolas, monospace; white-space: pre; }.left-segment-header .segment-number { color: #45e945; }.left-segment-header .segment-airline { color: #29b8f7; }.left-segment-header .segment-class { color: #45e945; }.left-segment-notes { margin: 0 0 18px; padding: 44px 14px 38px; background: #888; color: #fff; font: 15px/1.52 Consolas, monospace; white-space: pre-wrap; }
+.left-segment { flex: 0 0 auto; padding: 16px 32px 0; background: #000; }.left-passenger { min-height: 28px; color: #45e945; font: 16px/1.45 Consolas, monospace; white-space: pre; }.left-segment-header { min-height: 28px; color: #e7e7e7; font: 16px/1.45 Consolas, monospace; white-space: pre; }.left-segment-header .segment-number { color: #45e945; }.left-segment-header .segment-airline { color: #29b8f7; }.left-segment-header .segment-class { color: #45e945; }.left-segment-notes { margin: 0 0 18px; padding: 44px 14px 38px; background: #888; color: #fff; font: 15px/1.52 Consolas, monospace; white-space: pre-wrap; }
 
 /* *ALL and *RV buttons */
 .left-btns {
