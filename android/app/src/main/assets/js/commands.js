@@ -35,6 +35,7 @@
       savedPnr: null,
       vendorLocator: null,
       vendorRemarks: null,
+      itineraryCancelled: false,
       ssr: [],
       osk: [],               // OSI remarks
       history: [],
@@ -283,7 +284,7 @@
         const stamp = date => String(date.getUTCDate()).padStart(2, "0") + month[date.getUTCMonth()] + String(date.getUTCFullYear()).slice(-2);
         const carrier = this.state.segments[0].carrier;
         this.state.vendorLocator = this.state.vendorLocator || `${carrier}*TRAINING/${stamp(now)} 1555`;
-        this.state.vendorRemarks = this.state.vendorRemarks || `VRMK-VI/ABS *ADTK1GBS// TTL FOR AUTO CANX FIXED FOR ${stamp(expiry)} AT 1555 GMT 1555Z ${stamp(now)}`;
+        this.state.vendorRemarks = this.state.vendorRemarks || `VRMK-VI/APG *MISSING SSR CTCM MOBILE OR SSR CTCE EMAIL OR SSR CTCR NON-CONSENT FOR ${carrier} 1722Z ${stamp(now)}\n2. VI/A1A *PLS ADV PAX EMAIL AND MOBILE PER SSR CTCM CTCE 1722Z ${stamp(now)}\n3. VI/A1A *ADTK1G${carrier} BY ${stamp(expiry)} 1555 DAC TIME ZONE OTHERWISE WILL BE XLD 1555Z ${stamp(now)}`;
         this.state.savedPnr = clone({
           segments: this.state.segments,
           names: this.state.names,
@@ -298,6 +299,7 @@
           saved: true,
           vendorLocator: this.state.vendorLocator,
           vendorRemarks: this.state.vendorRemarks,
+          itineraryCancelled: false,
           ssr: this.state.ssr,
           osk: this.state.osk
         });
@@ -416,6 +418,14 @@
       }
 
       // ── CANCEL SEGMENT: X1 ──
+      if (cmd === "XI") {
+        if (!this.state.locator) return this.error("NO ACTIVE PNR");
+        this.state.segments = [];
+        this.state.priced = false;
+        this.state.storedFare = false;
+        this.state.itineraryCancelled = true;
+        return { lines: ["ITINERARY CANCELLED"], kind: "cancel" };
+      }
       const xseg = cmd.match(/^X(\d+)$/);
       if (xseg) {
         const segN = parseInt(xseg[1]);

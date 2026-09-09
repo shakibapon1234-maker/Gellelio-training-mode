@@ -48,7 +48,11 @@ function testBooking(context) {
   assert.strictEqual(run("*VL").leftDisplay, "vendorLocator");
   const remarks = run("*VR");
   assert.strictEqual(remarks.leftDisplay, "vendorRemarks");
-  assert(engine.state.vendorRemarks.includes("TTL FOR AUTO CANX FIXED FOR"));
+  assert(engine.state.vendorRemarks.includes("ADTK1G"));
+  const cancelled = run("XI");
+  assert.strictEqual(cancelled.kind, "cancel");
+  assert.strictEqual(engine.state.segments.length, 0);
+  assert.strictEqual(engine.state.itineraryCancelled, true);
   const fare = run("FQ");
   assert(fare.lines.some(line => line.includes("TOTAL")));
   assert(run("FXP").lines[0].includes("TST"));

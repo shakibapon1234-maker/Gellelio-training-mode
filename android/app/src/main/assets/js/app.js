@@ -28,6 +28,7 @@ const engine = new GalileoCommandEngine();
 try { const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); if (Array.isArray(stored)) engine.state.history = stored.slice(-100); } catch (_) {}
 let histIdx = -1;
 let lastCommand = "";
+let activeLeftCommand = "";
 
 function span(cls, text) {
   const el = document.createElement("span");
@@ -188,7 +189,7 @@ function showFlightDetails(flight, bookingClass) {
   setLeftPane(detailLines, true);
 }
 
-function renderAvailability(resp) {
+function renderAvailability(resp, commandEcho) {
   clearScreen();
   const header = document.createElement("pre");
   header.className = "output avail-header";
@@ -284,6 +285,8 @@ function renderAvailability(resp) {
     terminal.appendChild(moreWrap);
   }
 
+  if (commandEcho) print(">" + commandEcho.toUpperCase(), "");
+
   terminal.scrollTop = 0;
 }
 
@@ -366,7 +369,7 @@ function renderLeftSegment(seg, notes) {
 function refreshLeftButtons() {
   if (!leftBtns) return;
   const s = engine.state;
-  if (!s.segments || !s.segments.length) {
+  if ((!s.segments || !s.segments.length) && !s.itineraryCancelled) {
     leftBtns.style.display = "none";
     return;
   }
@@ -375,8 +378,13 @@ function refreshLeftButtons() {
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
   if (s.saved) commands.push("*VL", "*VR");
-  leftBtns.innerHTML = commands.map(function(command) { return '<button class="left-btn" data-cmd="' + command + '">' + command + '</button>'; }).join("");
+  leftBtns.innerHTML = commands.map(function(command) { return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>'; }).join("");
   leftBtns.style.display = "flex";
+}
+
+function renderCancelledPNR() {
+  const s = engine.state;
+  setLeftPane(["PNR INUSE - IGNORE AND RERETRIEVE", "1-" + ((s.names && s.names[0]) ? s.names[0].replace(/^1-/, "") : "PASSENGER"), "", "** VENDOR LOCATOR DATA EXISTS **  >*VL", "** VENDOR REMARKS DATA EXISTS **  >*VR"], true);
 }
 
 function renderLeftPNRDisplay(display) {
@@ -486,6 +494,7 @@ function processCommand(raw) {
 
   if (resp.clearTerminal) clearScreen();
   if (resp.leftDisplay) renderLeftPNRDisplay(resp.leftDisplay);
+  if (resp.kind === "cancel") renderCancelledPNR();
 
   if (cmd.toUpperCase() === "SOF") {
     engine.state.history = [];
@@ -513,6 +522,8 @@ function processCommand(raw) {
   } else if ((resp.kind === "sell" || resp.kind === "name") && engine.state.availability && engine.state.results.length) {
     // Keep the searched flights visible after selling, as in Smartpoint.
     renderAvailability(engine._availScreen());
+  } else if (/^(P\.(?:T|P)\*|9\/|T\.T\*|T-|R\.|RF-)/i.test(cmd) && engine.state.availability && engine.state.results.length) {
+    renderAvailability(engine._availScreen(), cmd);
   } else if (resp.kind === "fare") {
     renderFare(resp);
   } else if (resp.lines && resp.lines.length) {
@@ -569,6 +580,7 @@ document.addEventListener("click", function(e) {
   }
   const btn = e.target.closest(".left-btn");
   if (btn && btn.dataset.cmd) {
+    activeLeftCommand = btn.dataset.cmd;
     processCommand(btn.dataset.cmd);
     inputEl.focus();
     return;
