@@ -494,6 +494,7 @@ function processCommand(raw) {
 
   if (resp.clearTerminal) clearScreen();
   if (resp.leftDisplay) renderLeftPNRDisplay(resp.leftDisplay);
+  if (resp.kind === "end") renderLeftPNRDisplay("overview");
   if (resp.kind === "cancel") renderCancelledPNR();
 
   if (cmd.toUpperCase() === "SOF") {
