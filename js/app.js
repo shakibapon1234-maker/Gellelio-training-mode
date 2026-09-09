@@ -574,3 +574,17 @@ function reset() {
 
 window.reset = reset;
 reset();
+
+// ============================================================
+//  TEMPORARY ONE-CLICK LOGIN BYPASS
+//  REMOVE THIS BLOCK BEFORE FINAL PROJECT SUBMISSION
+// ============================================================
+(function autoLogin() {
+  if (engine.state.signedIn) return;
+  engine.state.signedIn = true;
+  engine.state.officeId = "DACVS086JJ";
+  engine.state.signOn = "DEMO";
+  setScreen("SIGN IN COMPLETE\nOFFICE ID  : DACVS086JJ\nDUTY CODE  : SU\nTRAINING   : GELLELIO GALILEO PRACTICE SIMULATOR");
+  update();
+  inputEl.focus();
+})();
