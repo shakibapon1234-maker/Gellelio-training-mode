@@ -396,6 +396,7 @@ function renderLeftSegment(seg, notes) {
     '<span class="segment-class">' + seg.soldClass + '</span>' + (seg.paxCount || 1) + '  ' +
     seg.date + '  <span class="segment-airline">' + seg.origin + seg.destination + '</span>  ' +
     status + '  ' + seg.depart + '  ' + seg.arrive + '  O';
+  leftSegmentNotes.classList.remove("pnr-details");
   leftSegmentNotes.textContent = (notes && notes.length ? notes : [
     "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS",
     "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION",
@@ -418,11 +419,37 @@ function refreshLeftButtons() {
   const commands = ["*ALL"];
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
-  commands.push("*RV");
+  if (s.saved) commands.push("*VL", "*VR");
   leftBtns.innerHTML = commands.map(function(command) {
     return '<button class="left-btn" data-cmd="' + command + '">' + command + '</button>';
   }).join("");
   leftBtns.style.display = "flex";
+}
+
+function renderLeftPNRDisplay(display) {
+  const s = engine.state;
+  const seg = s.segments && s.segments[0];
+  if (!seg || !leftSegmentNotes) return;
+  renderLeftSegment(seg, []);
+  const vendorExists = [
+    "** VENDOR LOCATOR DATA EXISTS **  >*VL",
+    "** VENDOR REMARKS DATA EXISTS **  >*VR"
+  ];
+  const phone = s.phones && s.phones[0] ? "FONE-CGPT* " + s.phones[0].toUpperCase() : "NO PHONE FIELD IN PNR";
+  const ticketing = s.ticketing ? "TKTG-" + s.ticketing : "NO TICKETING FIELD IN PNR";
+  const vendorLocator = ["VENDOR LOCATOR", "VLOC-" + (s.vendorLocator || "NOT AVAILABLE")];
+  const vendorRemarks = ["VENDOR REMARKS", s.vendorRemarks || "NO VENDOR REMARKS IN PNR"];
+  const displays = {
+    overview: vendorExists,
+    all: vendorExists.concat(["", phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks]),
+    phone: [phone],
+    ticketing: [ticketing],
+    vendorLocator,
+    vendorRemarks
+  };
+  leftSegmentNotes.textContent = (displays[display] || vendorExists).join("\n");
+  leftSegmentNotes.classList.add("pnr-details");
+  leftSegmentNotes.hidden = false;
 }
 
 function updateTab() {
@@ -509,6 +536,7 @@ function processCommand(raw) {
   const resp = engine.process(cmd);
 
   if (resp.clearTerminal) clearScreen();
+  if (resp.leftDisplay) renderLeftPNRDisplay(resp.leftDisplay);
 
   if (cmd.toUpperCase() === "SOF") {
     engine.state.history = [];

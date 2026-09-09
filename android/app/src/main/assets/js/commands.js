@@ -33,6 +33,8 @@
       issued: false,
       saved: false,
       savedPnr: null,
+      vendorLocator: null,
+      vendorRemarks: null,
       ssr: [],
       osk: [],               // OSI remarks
       history: [],
@@ -275,6 +277,13 @@
         if (!this.state.names.length)    return this.error("NO PASSENGER NAME - ADD WITH N/SURNAME/FIRSTNAME TITLE");
         this.state.saved   = true;
         this.state.locator = genLocator();
+        const now = new Date();
+        const expiry = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+        const month = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+        const stamp = date => String(date.getUTCDate()).padStart(2, "0") + month[date.getUTCMonth()] + String(date.getUTCFullYear()).slice(-2);
+        const carrier = this.state.segments[0].carrier;
+        this.state.vendorLocator = this.state.vendorLocator || `${carrier}*TRAINING/${stamp(now)} 1555`;
+        this.state.vendorRemarks = this.state.vendorRemarks || `VRMK-VI/ABS *ADTK1GBS// TTL FOR AUTO CANX FIXED FOR ${stamp(expiry)} AT 1555 GMT 1555Z ${stamp(now)}`;
         this.state.savedPnr = clone({
           segments: this.state.segments,
           names: this.state.names,
@@ -287,20 +296,32 @@
           storedFare: this.state.storedFare,
           issued: this.state.issued,
           saved: true,
+          vendorLocator: this.state.vendorLocator,
+          vendorRemarks: this.state.vendorRemarks,
           ssr: this.state.ssr,
           osk: this.state.osk
         });
         return { lines: [], kind: "end", clearTerminal: true };
       }
 
+      // ── PNR left-work-area displays ──
+      if (cmd === "IR") {
+        if (!this.state.locator) return this.error("NO ACTIVE PNR");
+        return { lines: [], kind: "left-display", leftDisplay: "overview", clearTerminal: true };
+      }
+      if (cmd === "*VL" || cmd === "*VR") {
+        if (!this.state.locator) return this.error("NO ACTIVE PNR");
+        return { lines: [], kind: "left-display", leftDisplay: cmd === "*VL" ? "vendorLocator" : "vendorRemarks", clearTerminal: true };
+      }
+
       // ── PNR quick displays ──
       if (cmd === "*P") {
         if (!this.state.phones.length) return this.error("NO PHONE FIELD IN PNR");
-        return { lines: this.state.phones.map((phone, index) => (index + 1) + ". AP " + phone.toUpperCase()), kind: "pnr" };
+        return { lines: [], kind: "left-display", leftDisplay: "phone", clearTerminal: true };
       }
       if (cmd === "*TD") {
         if (!this.state.ticketing) return this.error("NO TICKETING FIELD IN PNR");
-        return { lines: ["TL " + this.state.ticketing], kind: "pnr" };
+        return { lines: [], kind: "left-display", leftDisplay: "ticketing", clearTerminal: true };
       }
 
       // ── RETRIEVE PNR: *LOCATOR ──
@@ -313,7 +334,7 @@
       // ── *ALL: display full PNR ──
       if (cmd === "*ALL") {
         if (!this.state.locator) return this.error("NO ACTIVE PNR - RETRIEVE FIRST");
-        return this._displayPNR();
+        return { lines: [], kind: "left-display", leftDisplay: "all", clearTerminal: true };
       }
 
       // ── *RV: re-display (same as retrieve) ──

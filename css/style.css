@@ -123,6 +123,7 @@ html, body {
 .left-segment-header .segment-airline { color: #29b8f7; }
 .left-segment-header .segment-class { color: #45e945; }
 .left-segment-notes { margin: 0 0 18px; padding: 44px 14px 38px; background: #888; color: #fff; font: 15px/1.52 Consolas, monospace; white-space: pre-wrap; }
+.left-segment-notes.pnr-details { margin: 0; padding: 30px 0 36px; background: #000; color: #f2f2f2; }
 
 /* *ALL and *RV buttons */
 .left-btns {
