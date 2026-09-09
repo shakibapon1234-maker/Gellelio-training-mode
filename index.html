@@ -23,11 +23,30 @@
   <main class="workspace">
 
     <section class="left-pane">
+      <div class="left-pane-head"><span>WORK AREA</span><b id="leftState">READY</b></div>
       <div id="leftMessage" class="left-message">NO B.F. TO DISPLAY
 CREATE OR RETRIEVE FIRST</div>
       <div id="leftButtons" class="left-btns" style="display:none">
         <button class="left-btn" data-cmd="*ALL">*ALL</button>
         <button class="left-btn" data-cmd="*RV">*RV</button>
+      </div>
+      <div class="left-workspace" aria-label="Training workspace information">
+        <div class="workspace-card command-card">
+          <span class="workspace-label">ACTIVE COMMAND</span>
+          <strong id="leftCommand">READY FOR ENTRY</strong>
+          <small id="leftHint">Enter a Galileo command in the terminal.</small>
+        </div>
+        <div class="workspace-card">
+          <span class="workspace-label">CURRENT RECORD</span>
+          <strong id="leftRecord">NO ACTIVE PNR</strong>
+          <small id="leftRecordDetail">Create or retrieve a booking to display its details.</small>
+        </div>
+        <div class="quick-commands">
+          <span class="workspace-label">QUICK COMMANDS</span>
+          <button type="button" class="quick-command" data-cmd="A01APRDACJED">AVAILABILITY</button>
+          <button type="button" class="quick-command" data-cmd="*ALL">DISPLAY PNR</button>
+          <button type="button" class="quick-command" data-cmd="HELP">COMMAND HELP</button>
+        </div>
       </div>
       <div class="left-tools">
         <span title="Back">&#9698;</span>

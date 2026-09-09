@@ -69,7 +69,7 @@ html, body {
   height: 26px;
   background: #f0f0f0;
   color: #333;
-  padding-left: 48%;
+  padding-left: clamp(360px, 46vw, 900px);
   display: flex;
   gap: 14px;
   align-items: center;
@@ -87,7 +87,7 @@ html, body {
   height: calc(100vh - 68px);
   max-height: calc(100vh - 68px);
   display: grid;
-  grid-template-columns: minmax(280px, 46%) minmax(0, 1fr);
+  grid-template-columns: minmax(360px, 46%) minmax(0, 1fr) 70px;
   grid-template-rows: minmax(0, 1fr);
   position: relative;
   overflow: hidden;
@@ -106,14 +106,80 @@ html, body {
   min-width: 0;
 }
 
+.left-pane-head {
+  height: 31px;
+  padding: 0 14px;
+  background: #111b24;
+  border-bottom: 1px solid #263744;
+  color: #8db9d1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  font: 11px Arial, sans-serif;
+  letter-spacing: .08em;
+}
+
+.left-pane-head b { color: #65cf8b; font-size: 10px; }
+
 .left-message {
-  flex: 1;
-  padding: 30px 14px 14px;
+  min-height: 150px;
+  max-height: 37%;
+  padding: 24px 14px 14px;
   font: 13px/1.5 Consolas, monospace;
   color: #e0e0e0;
   white-space: pre-wrap;
   overflow-y: auto;
 }
+
+.left-workspace {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-rows: minmax(74px, auto) minmax(74px, auto) minmax(0, 1fr);
+  gap: 10px;
+  background: linear-gradient(180deg, #050505 0%, #0a0d0f 100%);
+  overflow: auto;
+}
+
+.workspace-card {
+  border: 1px solid #26333b;
+  border-left: 3px solid #3986a8;
+  background: #0d1317;
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.command-card { border-left-color: #d2ae37; }
+.workspace-label { color: #7f9baa; font: 10px Arial, sans-serif; letter-spacing: .08em; }
+.workspace-card strong { color: #e9f2f7; font: 13px Consolas, monospace; overflow-wrap: anywhere; }
+.workspace-card small { color: #9ba7ad; font: 11px/1.35 Arial, sans-serif; }
+
+.quick-commands {
+  border: 1px solid #26333b;
+  background: #0d1317;
+  padding: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.quick-command {
+  border: 1px solid #344a56;
+  background: #17232b;
+  color: #cfe5ef;
+  padding: 8px 10px;
+  text-align: left;
+  font: 11px Consolas, monospace;
+  cursor: pointer;
+}
+
+.quick-command:hover { background: #24536a; border-color: #61a7c7; color: #fff; }
 
 /* *ALL and *RV buttons */
 .left-btns {
@@ -169,8 +235,7 @@ html, body {
   min-height: 0;
   overflow: hidden;
   position: relative;
-  /* leave room for right-tools bar */
-  margin-right: 70px;
+  grid-column: 2;
 }
 
 /* Tab row */
@@ -402,11 +467,11 @@ html, body {
 
 /* ── RIGHT TOOLS BAR ── */
 .right-tools {
-  position: absolute;
-  right: 0;
-  top: 26px;   /* below tab row */
+  grid-column: 3;
+  grid-row: 1;
+  position: static;
   width: 70px;
-  height: calc(100% - 26px);
+  height: 100%;
   background: #e8e8e8;
   color: #777;
   display: flex;
@@ -575,14 +640,10 @@ html, body {
 @media (max-width: 760px) { .brand-window { width: calc(100vw - 18px); height: calc(100vh - 32px); }.brand-route { padding: 8px; font-size: 12px; gap: 8px; }.brand-body { grid-template-columns: 30% 70%; }.brand-ancillary { display: none; }.brand-hero b { font-size: 25px; }.brand-description { font-size: 14px; }.brand-footer { font-size: 11px; } }
 
 /* ── Responsive ── */
-@media (min-width: 960px) {
-  .terminal-wrap { margin-right: 70px; }
-}
-
 @media (max-width: 640px) {
   .menu-bar   { padding-left: 6px; gap: 8px; font-size: 8px; }
   .workspace  { grid-template-columns: 1fr; }
   .left-pane  { display: none; }
   .right-tools { display: none; }
-  .terminal-wrap { margin-right: 0; }
+  .terminal-wrap { grid-column: 1; }
 }

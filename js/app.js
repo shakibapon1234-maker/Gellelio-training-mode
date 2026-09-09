@@ -6,6 +6,11 @@ const inputEl    = document.getElementById("commandInput");
 const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
+const leftState  = document.getElementById("leftState");
+const leftCommand = document.getElementById("leftCommand");
+const leftHint = document.getElementById("leftHint");
+const leftRecord = document.getElementById("leftRecord");
+const leftRecordDetail = document.getElementById("leftRecordDetail");
 const tabLabel   = document.getElementById("tabLabel");
 const locBadge   = document.getElementById("locatorBadge");
 const pnrSummary = document.getElementById("pnrSummary");
@@ -405,12 +410,38 @@ function updatePNR() {
     (s.issued ? "<br><b class='issued'>TICKET ISSUED</b>" : "");
 }
 
+function updateLeftWorkspace() {
+  const s = engine.state;
+  const command = lastCommand || "READY FOR ENTRY";
+  if (leftCommand) leftCommand.textContent = command;
+  if (leftState) leftState.textContent = s.signedIn ? "SIGNED IN" : "READY";
+  if (leftHint) {
+    if (!lastCommand) leftHint.textContent = "Enter a Galileo command in the terminal.";
+    else if (s.availability) leftHint.textContent = "Select a class to view details, or enter a sell command.";
+    else if (s.segments && s.segments.length) leftHint.textContent = "Continue the PNR or use *ALL to review the booking.";
+    else leftHint.textContent = "Command processed. Continue with the next training step.";
+  }
+  if (!leftRecord || !leftRecordDetail) return;
+  const segment = s.segments && s.segments[0];
+  if (s.locator) {
+    leftRecord.textContent = "PNR " + s.locator;
+    leftRecordDetail.textContent = segment ? segment.carrier + segment.number + " " + segment.origin + "-" + segment.destination : "Booking saved and ready to retrieve.";
+  } else if (segment) {
+    leftRecord.textContent = "UNSAVED ITINERARY";
+    leftRecordDetail.textContent = segment.carrier + segment.number + " " + segment.origin + "-" + segment.destination + ". Add passenger details and end transact.";
+  } else {
+    leftRecord.textContent = "NO ACTIVE PNR";
+    leftRecordDetail.textContent = "Create or retrieve a booking to display its details.";
+  }
+}
+
 function update() {
   const s = engine.state;
   if (statusSpan) statusSpan.textContent = s.signedIn ? "SIGNED IN" : "OFFLINE";
   if (officeSpan) officeSpan.textContent = s.signedIn ? ("OFFICE: " + (s.officeId || "DACVS086JJ")) : "GALILEO TRAINING";
   updateTab();
   updatePNR();
+  updateLeftWorkspace();
   mark();
   persistHistory();
 }
@@ -511,7 +542,7 @@ document.addEventListener("click", function(e) {
     closeHistory();
     return;
   }
-  const btn = e.target.closest(".left-btn");
+  const btn = e.target.closest(".left-btn, .quick-command");
   if (btn && btn.dataset.cmd) {
     processCommand(btn.dataset.cmd);
     inputEl.focus();
