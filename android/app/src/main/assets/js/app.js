@@ -78,14 +78,18 @@ function renderHistory() {
   }
   entries.slice().reverse().forEach(function(command, displayIndex) {
     const sourceIndex = entries.length - 1 - displayIndex;
-    const entry = document.createElement("button");
-    entry.type = "button";
+    const entry = document.createElement("textarea");
     entry.className = "history-entry" + (sourceIndex === historyInput.selected ? " selected" : "");
     entry.dataset.historyIndex = String(sourceIndex);
-    entry.textContent = command;
-    entry.addEventListener("click", function() {
+    entry.value = command;
+    entry.rows = 1;
+    entry.spellcheck = false;
+    entry.addEventListener("focus", function() {
       historyInput.selected = sourceIndex;
-      renderHistory();
+    });
+    entry.addEventListener("input", function() {
+      engine.state.history[sourceIndex] = entry.value;
+      persistHistory();
     });
     historyList.appendChild(entry);
   });
@@ -367,6 +371,7 @@ function refreshLeftButtons() {
     return;
   }
   const commands = ["*ALL"];
+  commands.push("*RV");
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
   if (s.saved) commands.push("*VL", "*VR");
@@ -477,6 +482,8 @@ function processCommand(raw) {
 
   const resp = engine.process(cmd);
 
+  if (/^A\d{2}[A-Z]{3}/i.test(cmd) || /^(I|IG)$/i.test(cmd)) closeBrands();
+
   if (resp.clearTerminal) clearScreen();
   if (resp.leftDisplay) renderLeftPNRDisplay(resp.leftDisplay);
 
@@ -503,7 +510,7 @@ function processCommand(raw) {
 
   if (resp.kind === "avail" && resp.flights) {
     renderAvailability(resp);
-  } else if (resp.kind === "sell" && engine.state.availability && engine.state.results.length) {
+  } else if ((resp.kind === "sell" || resp.kind === "name") && engine.state.availability && engine.state.results.length) {
     // Keep the searched flights visible after selling, as in Smartpoint.
     renderAvailability(engine._availScreen());
   } else if (resp.kind === "fare") {

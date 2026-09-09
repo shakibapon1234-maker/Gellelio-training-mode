@@ -523,6 +523,8 @@ html, body {
 .history-entry {
   display: block;
   width: 100%;
+  box-sizing: border-box;
+  min-height: 33px;
   border: 0;
   background: transparent;
   color: #222;
@@ -531,8 +533,8 @@ html, body {
   font: inherit;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
+  resize: vertical;
+  cursor: text;
 }
 
 .history-entry:hover { background: #e3f2fb; }
