@@ -56,9 +56,15 @@ function testBooking(context) {
   const remarks = run("*VR");
   assert.strictEqual(remarks.leftDisplay, "vendorRemarks");
   assert(engine.state.vendorRemarks.includes("ADTK1G"));
+  const fareLoad = run("FQCTG/ET");
+  assert.strictEqual(fareLoad.kind, "fare");
+  assert.strictEqual(engine.state.filedFare, true);
+  assert.strictEqual(run("*FF").leftDisplay, "filedFare");
   const cancelled = run("XI");
   assert.strictEqual(cancelled.kind, "cancel");
+  assert(cancelled.lines[0].includes("SSR DATA CANCELLED"));
   assert.strictEqual(engine.state.segments.length, 0);
+  assert.strictEqual(engine.state.ssr.length, 0);
   assert.strictEqual(engine.state.itineraryCancelled, true);
   const fare = run("FQ");
   assert(fare.lines.some(line => line.includes("TOTAL")));
@@ -104,6 +110,8 @@ function testBooking(context) {
   assert.strictEqual(restore.state.names.length, 0);
   assert.strictEqual(restore.state.segments.length, 0);
   assert.strictEqual(restore.state.locator, null);
+  assert(restoreRun("*" + restore.lastSavedPnr.locator).lines.some(line => line.includes("RLR")));
+  assert.strictEqual(restore.state.locator, restore.lastSavedPnr.locator);
 }
 
 const roots = [path.resolve(__dirname, "..")];

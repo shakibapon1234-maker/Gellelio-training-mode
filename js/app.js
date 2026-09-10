@@ -427,6 +427,7 @@ function refreshLeftButtons() {
   commands.push("*RV");
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
+  if (s.filedFare) commands.push("*FF");
   if (s.ssr && s.ssr.length) commands.push("*SI");
   if (s.saved) commands.push("*VL", "*VR");
   leftBtns.innerHTML = commands.map(function(command) {
@@ -460,14 +461,16 @@ function renderLeftPNRDisplay(display) {
   const vendorLocator = ["VENDOR LOCATOR", "VLOC-" + (s.vendorLocator || "NOT AVAILABLE")];
   const vendorRemarks = ["VENDOR REMARKS", s.vendorRemarks || "NO VENDOR REMARKS IN PNR"];
   const service = ["SERVICE INFORMATION"].concat((s.ssr || []).map(function(item) { return "SSR-" + item; }));
+  const filedFare = s.fare ? ["FILED FARE", "FQG 1        BDT " + s.fare.total.toLocaleString(), "GRAND TOTAL INCLUDING TAXES     BDT " + s.fare.total.toLocaleString(), "E-TKT REQUIRED", "BAGGAGE ALLOWANCE", "ADT  " + (s.segments[0] ? s.segments[0].carrier + " " + s.segments[0].origin + s.segments[0].destination + "  2PC" : "2PC")] : ["NO FILED FARE DATA IN PNR"];
   const displays = {
-    overview: vendorExists.concat(s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []),
-    all: vendorExists.concat(s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []).concat(["", phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks], s.ssr && s.ssr.length ? ["", ...service] : []),
+    overview: (s.filedFare ? ["** FILED FARE DATA EXISTS **  >*FF"] : []).concat(vendorExists, s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []),
+    all: (s.filedFare ? ["** FILED FARE DATA EXISTS **  >*FF"] : []).concat(vendorExists, s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []).concat(["", phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks], s.ssr && s.ssr.length ? ["", ...service] : [], s.filedFare ? ["", ...filedFare] : []),
     phone: [phone],
     ticketing: [ticketing],
     vendorLocator,
     vendorRemarks,
-    service
+    service,
+    filedFare
   };
   leftSegmentNotes.textContent = (displays[display] || vendorExists).join("\n");
   leftSegmentNotes.classList.add("pnr-details");

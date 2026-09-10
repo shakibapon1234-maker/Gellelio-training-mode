@@ -29,6 +29,7 @@
       locator: null,
       priced: false,
       fare: null,
+      filedFare: false,
       storedFare: false,
       issued: false,
       saved: false,
@@ -290,6 +291,7 @@
           locator: this.state.locator,
           priced: this.state.priced,
           fare: this.state.fare,
+          filedFare: this.state.filedFare,
           storedFare: this.state.storedFare,
           issued: this.state.issued,
           saved: true,
@@ -299,6 +301,7 @@
           ssr: this.state.ssr,
           osk: this.state.osk
         });
+        this.lastSavedPnr = clone(this.state.savedPnr);
         // Smartpoint commits the BF to the left work area after ER; it does
         // not print an RLR receipt in the terminal pane.
         return { lines: [], kind: "end", clearTerminal: true };
@@ -327,11 +330,19 @@
         if (!this.state.ssr.length) return this.error("NO SERVICE INFORMATION IN PNR");
         return { lines: [], kind: "left-display", leftDisplay: "service", clearTerminal: true };
       }
+      if (cmd === "*FF") {
+        if (!this.state.filedFare || !this.state.fare) return this.error("NO FILED FARE DATA IN PNR");
+        return { lines: [], kind: "left-display", leftDisplay: "filedFare", clearTerminal: true };
+      }
 
       // ── RETRIEVE PNR: *LOCATOR ──
       if (cmd.startsWith("*") && !cmd.startsWith("*ALL") && !cmd.startsWith("*RV")) {
         const loc = cmd.slice(1);
-        if (loc !== this.state.locator) return this.error(`RECORD LOCATOR ${loc} NOT FOUND`);
+        if (loc !== this.state.locator) {
+          if (!this.lastSavedPnr || loc !== this.lastSavedPnr.locator) return this.error(`RECORD LOCATOR ${loc} NOT FOUND`);
+          const signedIn = this.state.signedIn, officeId = this.state.officeId, history = this.state.history;
+          this.state = Object.assign(freshState(), clone(this.lastSavedPnr), { signedIn, officeId, history });
+        }
         return this._displayPNR();
       }
 
@@ -366,7 +377,7 @@
       }
       const fareSearch = fsCommand.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
       const roundTripFareSearch = fsCommand.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
-      if (cmd === "FQ" || cmd === "FQCEK/ET" || fareSearch || roundTripFareSearch) {
+      if (cmd === "FQ" || /^FQ[A-Z]{3}\/ET$/.test(cmd) || fareSearch || roundTripFareSearch) {
         const seg  = this.state.segments[0] || {
           origin: fareSearch ? fareSearch[1] : (roundTripFareSearch ? roundTripFareSearch[1] : "DAC"),
           destination: fareSearch ? fareSearch[3] : (roundTripFareSearch ? roundTripFareSearch[3] : "BKK"),
@@ -380,6 +391,7 @@
         fare.options.forEach(option => { option.partyTotal = Math.round(option.total * (passengers.adt + passengers.chd * 0.75)); });
         this.state.fare   = fare;
         this.state.priced = true;
+        this.state.filedFare = true;
         const lines = ["TTL OF " + (roundTripFareSearch ? "31" : "59") + "  PRICING OPTIONS AND " + (roundTripFareSearch ? "70" : "78") + "    ITINERARY OPTIONS RETURNED", ""];
         fare.options.forEach((option, index) => {
           const total = String(option.partyTotal);
@@ -434,8 +446,10 @@
         this.state.segments = [];
         this.state.priced = false;
         this.state.storedFare = false;
+        const hadServices = this.state.ssr.length > 0;
+        this.state.ssr = [];
         this.state.itineraryCancelled = true;
-        return { lines: ["ITINERARY CANCELLED"], kind: "cancel" };
+        return { lines: hadServices ? ["** SSR DATA CANCELLED **    TO REINSTATE SSR DATA  >*SIR.", "ITINERARY CANCELLED"] : ["ITINERARY CANCELLED"], kind: "cancel" };
       }
       const xseg = cmd.match(/^X(\d+)$/);
       if (xseg) {
