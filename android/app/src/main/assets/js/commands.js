@@ -325,6 +325,10 @@
         if (!this.state.ticketing) return this.error("NO TICKETING FIELD IN PNR");
         return { lines: [], kind: "left-display", leftDisplay: "ticketing", clearTerminal: true };
       }
+      if (cmd === "*SI") {
+        if (!this.state.ssr.length) return this.error("NO SERVICE INFORMATION IN PNR");
+        return { lines: [], kind: "left-display", leftDisplay: "service", clearTerminal: true };
+      }
 
       // ── RETRIEVE PNR: *LOCATOR ──
       if (cmd.startsWith("*") && !cmd.startsWith("*ALL") && !cmd.startsWith("*RV")) {
@@ -438,6 +442,20 @@
       }
 
       // ── SSR: SI.SSR MEAL, SI.SSR WCHR, etc. ──
+      const serviceMatch = cmd.match(/^SI\.P(\d+)\/(?:SSR)?([A-Z]{4})(.*)$/);
+      if (serviceMatch) {
+        const passenger = serviceMatch[1];
+        const code = serviceMatch[2];
+        const detail = serviceMatch[3].replace(/^\//, "").replace(/\*$/, "").trim();
+        const accepted = ["CTCE", "CTCM", "MOML", "SPML", "VGML", "AVML", "WCHR", "WCHS", "WCHC"];
+        if (!accepted.includes(code)) return this.error("INVALID SSR CODE - USE CTCE, CTCM, MOML, SPML, VGML, AVML OR WCHR");
+        if ((code === "WCHR" || code === "WCHS" || code === "WCHC") && !detail) return this.error("WHEELCHAIR SSR MUST BE FOLLOWED BY TEXT");
+        const labels = { CTCE:"EMAIL", CTCM:"MOBILE", MOML:"MUSLIM MEAL", SPML:"SPECIAL MEAL", VGML:"VEGETARIAN MEAL", AVML:"ASIAN VEGETARIAN MEAL", WCHR:"WHEELCHAIR TO RAMP", WCHS:"WHEELCHAIR - STEPS", WCHC:"WHEELCHAIR - CABIN SEAT" };
+        const value = `P${passenger} ${code}${detail ? " " + detail : ""}`;
+        this.state.ssr.push(value);
+        return { lines: [`SSR ${labels[code]} ADDED FOR PASSENGER ${passenger}${detail ? ": " + detail : ""}`], kind: "service" };
+      }
+
       if (cmd.startsWith("SI.SSR ") || cmd.startsWith("SSR ")) {
         const ssrVal = cmd.startsWith("SI.SSR ") ? cmd.slice(7) : cmd.slice(4);
         this.state.ssr.push(ssrVal);
@@ -456,16 +474,13 @@
         const signedIn = this.state.signedIn;
         const officeId = this.state.officeId;
         const history = this.state.history;
-        const savedPnr = this.state.savedPnr ? clone(this.state.savedPnr) : null;
         this.reset();
         this.state.signedIn = signedIn;
         this.state.officeId = officeId;
         this.state.history = history;
-        if (savedPnr) Object.assign(this.state, savedPnr, { savedPnr });
         return {
-          lines: [savedPnr ? "IGNORED - CHANGES DISCARDED - SAVED PNR RESTORED" : "IGNORED - CHANGES DISCARDED"],
-          kind: "ignore",
-          ignoredToSavedPNR: !!savedPnr
+          lines: ["IGNORED - CHANGES DISCARDED"],
+          kind: "ignore"
         };
       }
 

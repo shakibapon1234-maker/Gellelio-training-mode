@@ -427,6 +427,7 @@ function refreshLeftButtons() {
   commands.push("*RV");
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
+  if (s.ssr && s.ssr.length) commands.push("*SI");
   if (s.saved) commands.push("*VL", "*VR");
   leftBtns.innerHTML = commands.map(function(command) {
     return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>';
@@ -458,13 +459,15 @@ function renderLeftPNRDisplay(display) {
   const ticketing = s.ticketing ? "TKTG-" + s.ticketing : "NO TICKETING FIELD IN PNR";
   const vendorLocator = ["VENDOR LOCATOR", "VLOC-" + (s.vendorLocator || "NOT AVAILABLE")];
   const vendorRemarks = ["VENDOR REMARKS", s.vendorRemarks || "NO VENDOR REMARKS IN PNR"];
+  const service = ["SERVICE INFORMATION"].concat((s.ssr || []).map(function(item) { return "SSR-" + item; }));
   const displays = {
-    overview: vendorExists,
-    all: vendorExists.concat(["", phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks]),
+    overview: vendorExists.concat(s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []),
+    all: vendorExists.concat(s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []).concat(["", phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks], s.ssr && s.ssr.length ? ["", ...service] : []),
     phone: [phone],
     ticketing: [ticketing],
     vendorLocator,
-    vendorRemarks
+    vendorRemarks,
+    service
   };
   leftSegmentNotes.textContent = (displays[display] || vendorExists).join("\n");
   leftSegmentNotes.classList.add("pnr-details");

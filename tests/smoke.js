@@ -38,6 +38,13 @@ function testBooking(context) {
   run("T.T*");
   assert.strictEqual(run("*P").leftDisplay, "phone");
   assert.strictEqual(run("*TD").leftDisplay, "ticketing");
+  assert(run("SI.P1/SSRCTCEBGHK1/WINGSFLY//GMAIL.COM *").lines[0].includes("EMAIL ADDED"));
+  assert(run("SI.P1/SSRCTCMTGHK1/01715208244 *").lines[0].includes("MOBILE ADDED"));
+  assert(run("SI.P1/MOML *").lines[0].includes("MUSLIM MEAL ADDED"));
+  assert(run("SI.P1/WCHR/NEEDS WHEELCHAIR TO AIRCRAFT *").lines[0].includes("WHEELCHAIR TO RAMP ADDED"));
+  assert(run("SI.P1/WCHR*").lines[0].includes("MUST BE FOLLOWED BY TEXT"));
+  assert.strictEqual(run("*SI").leftDisplay, "service");
+  assert.strictEqual(engine.state.ssr.length, 4);
   run("R.H");
   const saved = run("ER");
   assert.strictEqual(saved.clearTerminal, true);
@@ -57,6 +64,18 @@ function testBooking(context) {
   assert(fare.lines.some(line => line.includes("TOTAL")));
   assert(run("FXP").lines[0].includes("TST"));
   assert(run("TKPFS/DTDAD").lines[0].includes("ETK ISSUED"));
+
+  // ER must create a PNR for both availability and fare-shopping flows as
+  // soon as a segment and passenger name are present.
+  const minimal = new context.GalileoCommandEngine();
+  const minimalRun = command => minimal.process(command);
+  minimalRun("SON/DEMO/DEMO");
+  minimalRun("A01APRDACJED");
+  minimalRun("N1Y1");
+  minimalRun("N/DOE/JANE MS");
+  assert.strictEqual(minimalRun("ER").kind, "end");
+  assert(minimal.state.locator);
+  assert.strictEqual(minimalRun("IR").leftDisplay, "overview");
 
   const discard = new context.GalileoCommandEngine();
   const discardRun = command => discard.process(command);
@@ -80,9 +99,11 @@ function testBooking(context) {
   restoreRun("ER");
   restoreRun("SI.SSR MEAL");
   const ignored = restoreRun("I");
-  assert(ignored.lines[0].includes("SAVED PNR RESTORED"));
+  assert.strictEqual(ignored.lines[0], "IGNORED - CHANGES DISCARDED");
   assert.strictEqual(restore.state.ssr.length, 0);
-  assert.strictEqual(restore.state.names[0], "1-DOE/JOHN MR");
+  assert.strictEqual(restore.state.names.length, 0);
+  assert.strictEqual(restore.state.segments.length, 0);
+  assert.strictEqual(restore.state.locator, null);
 }
 
 const roots = [path.resolve(__dirname, "..")];
