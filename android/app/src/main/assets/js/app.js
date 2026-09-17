@@ -401,7 +401,7 @@ function refreshLeftPassenger() {
   leftPassenger.hidden = !name;
 }
 
-function renderLeftSegment(seg, notes) {
+function renderLeftSegment(seg, notes, hideNotes) {
   if (!seg || !leftSegment || !leftSegmentHeader || !leftSegmentNotes) return;
   const status = "HS" + (seg.paxCount || 1);
   const arriveStr = formatArriveTime(seg.depart, seg.arrive);
@@ -414,16 +414,33 @@ function renderLeftSegment(seg, notes) {
     status + '  ' + seg.depart + ' ' + arriveStr + ' 0' +
     (dayCode ? ('              ' + dayCode) : '');
   leftSegmentNotes.classList.remove("pnr-details");
-  leftSegmentNotes.textContent = (notes && notes.length ? notes : [
-    "DEPARTS " + seg.origin + " TERMINAL 1  - ARRIVES " + seg.destination + " TERMINAL 3",
-    "*APIS PAX DATA REQUIRED SSR DOCS*",
-    "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS",
-    "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION",
-    "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES",
-    "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"
-  ]).join("\n");
+
+  const termOrig = seg.termOrig || "1";
+  const termDest = (seg.destination === "SIN") ? "3" : (seg.termDest || "3");
+  const departsLine = "DEPARTS " + seg.origin + " TERMINAL " + termOrig + "  - ARRIVES " + seg.destination + " TERMINAL " + termDest;
+  const apisLine = "*APIS PAX DATA REQUIRED SSR DOCS*";
+
+  let lines = [departsLine, apisLine];
+  if (notes && notes.length) {
+    notes.forEach(function(line) {
+      if (!line.startsWith("DEPARTS") && !line.includes("APIS PAX DATA REQUIRED")) {
+        lines.push(line);
+      }
+    });
+  }
+  if (!lines.some(function(l) { return l.includes("ADD ADVANCE PASSENGER"); })) {
+    lines.push("ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS");
+  }
+  if (!lines.some(function(l) { return l.includes("PERSONAL DATA"); })) {
+    lines.push("PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION");
+    lines.push("WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES");
+    lines.push("FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES");
+  }
+
+  leftSegmentNotes.textContent = lines.join("\n");
   if (leftMsg) leftMsg.hidden = true;
-  leftSegmentNotes.hidden = !(notes && notes.length);
+  const hasName = !!(engine.state.names && engine.state.names.length);
+  leftSegmentNotes.hidden = hideNotes !== undefined ? !!hideNotes : hasName;
   leftSegment.hidden = false;
   if (leftBtns) leftBtns.style.display = "flex";
 }
@@ -457,7 +474,7 @@ function renderLeftPNRDisplay(display) {
   const s = engine.state;
   const seg = s.segments && s.segments[0];
   if (!seg || !leftSegmentNotes) return;
-  renderLeftSegment(seg, []);
+  renderLeftSegment(seg, [], true);
   const vendorExists = ["** VENDOR LOCATOR DATA EXISTS **  >*VL", "** VENDOR REMARKS DATA EXISTS **  >*VR"];
   const phone = s.phones && s.phones[0] ? "FONE-CGPT* " + s.phones[0].toUpperCase() : "NO PHONE FIELD IN PNR";
   const ticketing = s.ticketing ? "TKTG-" + s.ticketing : "NO TICKETING FIELD IN PNR";
