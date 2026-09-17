@@ -679,8 +679,16 @@ function processCommand(raw) {
   if (/^A\d{2}[A-Z]{3}/i.test(cmd) || /^(I|IG)$/i.test(cmd)) closeBrands();
 
   if (resp.clearTerminal) clearScreen();
-  if (resp.leftDisplay) renderLeftPNRDisplay(resp.leftDisplay);
-  if (resp.kind === "end") renderLeftPNRDisplay("overview");
+  if (resp.leftDisplay && resp.leftDisplay !== "overview") renderLeftPNRDisplay(resp.leftDisplay);
+  if (resp.kind === "end" || (resp.leftDisplay === "overview") || cmd.toUpperCase() === "IR" || cmd.toUpperCase() === "*RV") {
+    if (leftSegmentNotes) {
+      leftSegmentNotes.classList.remove("pnr-details");
+      leftSegmentNotes.textContent = "";
+      leftSegmentNotes.hidden = true;
+    }
+    const seg = engine.state.segments && engine.state.segments[0];
+    if (seg) renderLeftSegment(seg, [], true);
+  }
   if (resp.kind === "cancel") renderCancelledPNR();
 
   if (cmd.toUpperCase() === "SOF") {
