@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 //  Gellelio Galileo Training Simulator — App Shell
 // ============================================================
 const terminal   = document.getElementById("terminal");
@@ -432,8 +432,6 @@ function getSegmentDayCode(dateStr, depart, arrive) {
     return depDay + "/" + arrDay;
   }
   return depDay;
-}
-
 }
 
 function refreshLeftPassenger() {
