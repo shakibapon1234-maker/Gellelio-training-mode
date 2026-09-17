@@ -524,6 +524,9 @@ function refreshLeftVendorBox() {
     return;
   }
   const lines = [];
+  if (s.filedFare) {
+    lines.push('<div class="vendor-exists-line">** FILED FARE DATA EXISTS **  <span class="cmd-link" data-cmd="*FF">&gt;*FF</span></div>');
+  }
   if (s.vendorLocator || s.receivedFrom || s.saved) {
     lines.push('<div class="vendor-exists-line">** VENDOR LOCATOR DATA EXISTS **  <span class="cmd-link" data-cmd="*VL">&gt;*VL</span></div>');
     lines.push('<div class="vendor-exists-line">** VENDOR REMARKS DATA EXISTS **  <span class="cmd-link" data-cmd="*VR">&gt;*VR</span></div>');
@@ -550,13 +553,13 @@ function refreshLeftButtons() {
   const commands = ["*ALL"];
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
+  if (s.filedFare) commands.push("*FF");
   if (s.vendorLocator || s.receivedFrom || s.saved) {
     commands.push("*VL");
     commands.push("*VR");
   }
   if (s.ssr && s.ssr.length) commands.push("*SI");
-  if (s.filedFare) commands.push("*FF");
-  commands.push("*RV");
+  if (!s.filedFare) commands.push("*RV");
 
   leftBtns.innerHTML = commands.map(function(command) {
     return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>';
