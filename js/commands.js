@@ -474,12 +474,18 @@
         const passenger = serviceMatch[1];
         const code = serviceMatch[2];
         const detail = serviceMatch[3].replace(/^\//, "").replace(/\*$/, "").trim();
-        const accepted = ["CTCE", "CTCM", "MOML", "SPML", "VGML", "AVML", "WCHR", "WCHS", "WCHC"];
-        if (!accepted.includes(code)) return this.error("INVALID SSR CODE - USE CTCE, CTCM, MOML, SPML, VGML, AVML OR WCHR");
+        const accepted = ["DOCS", "CTCE", "CTCM", "MOML", "SPML", "VGML", "AVML", "WCHR", "WCHS", "WCHC"];
+        if (!accepted.includes(code)) return this.error("INVALID SSR CODE - USE DOCS, CTCE, CTCM, MOML, SPML, VGML, AVML OR WCHR");
         if ((code === "WCHR" || code === "WCHS" || code === "WCHC") && !detail) return this.error("WHEELCHAIR SSR MUST BE FOLLOWED BY TEXT");
-        const labels = { CTCE:"EMAIL", CTCM:"MOBILE", MOML:"MUSLIM MEAL", SPML:"SPECIAL MEAL", VGML:"VEGETARIAN MEAL", AVML:"ASIAN VEGETARIAN MEAL", WCHR:"WHEELCHAIR TO RAMP", WCHS:"WHEELCHAIR - STEPS", WCHC:"WHEELCHAIR - CABIN SEAT" };
-        const value = `P${passenger} ${code}${detail ? " " + detail : ""}`;
-        this.state.ssr.push(value);
+        const labels = { DOCS:"PASSPORT", CTCE:"EMAIL", CTCM:"MOBILE", MOML:"MUSLIM MEAL", SPML:"SPECIAL MEAL", VGML:"VEGETARIAN MEAL", AVML:"ASIAN VEGETARIAN MEAL", WCHR:"WHEELCHAIR TO RAMP", WCHS:"WHEELCHAIR - STEPS", WCHC:"WHEELCHAIR - CABIN SEAT" };
+        const ssrItem = {
+          passenger,
+          code,
+          detail,
+          raw: raw.trim().replace(/\*+$/, "").trim(),
+          toString: function() { return `P${this.passenger} ${this.code}${this.detail ? " " + this.detail : ""}`; }
+        };
+        this.state.ssr.push(ssrItem);
         return { lines: [`SSR ${labels[code]} ADDED FOR PASSENGER ${passenger}${detail ? ": " + detail : ""}`], kind: "service" };
       }
 

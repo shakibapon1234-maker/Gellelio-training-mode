@@ -655,3 +655,20 @@ html, body {
 .vendor-exists-line .cmd-link:hover {
   text-decoration: underline;
 }
+
+.vendor-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.left-details {
+  margin-top: 18px;
+  color: #fff;
+  font: 14px/1.45 Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.left-details .highlight-green {
+  color: #45e945;
+}

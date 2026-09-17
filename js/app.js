@@ -7,6 +7,7 @@ const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
 const leftVendorBox = document.getElementById("leftVendorBox");
+const leftDetails   = document.getElementById("leftDetails");
 const leftSegment = document.getElementById("leftSegment");
 const leftPnrHeader = document.getElementById("leftPnrHeader");
 const leftPassenger = document.getElementById("leftPassenger");
@@ -390,6 +391,7 @@ function setLeftPane(lines, showButtons) {
   if (leftPassenger) leftPassenger.hidden = true;
   if (leftPnrHeader) leftPnrHeader.hidden = true;
   if (leftVendorBox) leftVendorBox.hidden = true;
+  if (leftDetails) { leftDetails.innerHTML = ""; leftDetails.hidden = true; }
   if (leftBtns) leftBtns.style.display = "none";
 }
 
@@ -517,8 +519,21 @@ function renderLeftSegment(seg, notes, hideNotes) {
 function refreshLeftVendorBox() {
   if (!leftVendorBox) return;
   const s = engine.state;
-  const isViewingPnrDetails = leftSegmentNotes && !leftSegmentNotes.hidden && leftSegmentNotes.classList.contains("pnr-details");
-  if (s.segments && s.segments.length && (s.vendorLocator || s.receivedFrom || s.saved) && !isViewingPnrDetails) {
+  if (!s.segments || !s.segments.length) {
+    leftVendorBox.hidden = true;
+    return;
+  }
+  const lines = [];
+  if (s.vendorLocator || s.receivedFrom || s.saved) {
+    lines.push('<div class="vendor-exists-line">** VENDOR LOCATOR DATA EXISTS **  <span class="cmd-link" data-cmd="*VL">&gt;*VL</span></div>');
+    lines.push('<div class="vendor-exists-line">** VENDOR REMARKS DATA EXISTS **  <span class="cmd-link" data-cmd="*VR">&gt;*VR</span></div>');
+  }
+  if (s.ssr && s.ssr.length) {
+    lines.push('<div class="vendor-exists-line">** SERVICE INFORMATION EXISTS **  <span class="cmd-link" data-cmd="*SI">&gt;*SI</span></div>');
+  }
+  if (lines.length) {
+    const notifContainer = document.getElementById("vendorNotifications") || leftVendorBox;
+    notifContainer.innerHTML = lines.join("");
     leftVendorBox.hidden = false;
   } else {
     leftVendorBox.hidden = true;
@@ -535,13 +550,14 @@ function refreshLeftButtons() {
   const commands = ["*ALL"];
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
-  if (s.filedFare) commands.push("*FF");
-  if (s.ssr && s.ssr.length) commands.push("*SI");
   if (s.vendorLocator || s.receivedFrom || s.saved) {
     commands.push("*VL");
-  } else {
-    commands.push("*RV");
+    commands.push("*VR");
   }
+  if (s.ssr && s.ssr.length) commands.push("*SI");
+  if (s.filedFare) commands.push("*FF");
+  commands.push("*RV");
+
   leftBtns.innerHTML = commands.map(function(command) {
     return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>';
   }).join("");
@@ -562,32 +578,71 @@ function renderCancelledPNR() {
 function renderLeftPNRDisplay(display) {
   const s = engine.state;
   const seg = s.segments && s.segments[0];
-  if (!seg || !leftSegmentNotes) return;
-  renderLeftSegment(seg, [], true);
-  const vendorExists = [
-    "** VENDOR LOCATOR DATA EXISTS **  >*VL",
-    "** VENDOR REMARKS DATA EXISTS **  >*VR"
-  ];
+  if (!leftDetails) return;
+
+  const paxName = (s.names && s.names[0]) ? s.names[0].replace(/^\d+-/, "") : "PASSENGER";
+  const pax1Formatted = "-1" + paxName;
+
   const phone = s.phones && s.phones[0] ? "FONE-CGPT* " + s.phones[0].toUpperCase() : "NO PHONE FIELD IN PNR";
   const ticketing = s.ticketing ? "TKTG-" + s.ticketing : "NO TICKETING FIELD IN PNR";
   const vendorLocator = ["VENDOR LOCATOR", "VLOC-" + (s.vendorLocator || "NOT AVAILABLE")];
   const vendorRemarks = ["VENDOR REMARKS", s.vendorRemarks || "NO VENDOR REMARKS IN PNR"];
-  const service = ["SERVICE INFORMATION"].concat((s.ssr || []).map(function(item) { return "SSR-" + item; }));
-  const filedFare = s.fare ? ["FILED FARE", "FQG 1        BDT " + s.fare.total.toLocaleString(), "GRAND TOTAL INCLUDING TAXES     BDT " + s.fare.total.toLocaleString(), "E-TKT REQUIRED", "BAGGAGE ALLOWANCE", "ADT  " + (s.segments[0] ? s.segments[0].carrier + " " + s.segments[0].origin + s.segments[0].destination + "  2PC" : "2PC")] : ["NO FILED FARE DATA IN PNR"];
+
+  let serviceLines = ["*** SPECIAL SERVICE REQUIREMENT ***", "SEGMENT/PASSENGER RELATED", "*** MANUAL SSR DATA ***"];
+  if (s.ssr && s.ssr.length) {
+    s.ssr.forEach(function(item, idx) {
+      const num = idx + 1;
+      let lineText = "";
+      const rawText = (typeof item === "object" && item.raw) ? item.raw : String(item);
+      if (rawText.includes("DOCS")) {
+        // e.g. SI.P1/SSRDOCSBSHK1/P/BGD/A92766286/BGD/20MAY95/M/20MAY30/KHAN/MD IMRAN
+        const afterDocs = rawText.replace(/^.*?DOCS/i, "");
+        const match = afterDocs.match(/^([A-Z]{2})?(?:HK\d*)?\/(.*)/i);
+        const carrier = (match && match[1]) || (seg ? seg.carrier : "BS");
+        const details = (match && match[2]) || afterDocs.replace(/^.*?\//, "");
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSRDOCS" + carrier + " HK   " + details + " " + pax1Formatted;
+      } else if (rawText.includes("CTCE")) {
+        const afterCtce = rawText.replace(/^.*?CTCE/i, "");
+        const match = afterCtce.match(/^([A-Z]{2})?(?:HK\d*)?\/(.*)/i);
+        const carrier = (match && match[1]) || (seg ? seg.carrier : "BS");
+        const email = (match && match[2]) || afterCtce.replace(/^.*?\//, "");
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSRCTCE" + carrier + " HK  /" + email + "-" + paxName;
+      } else if (rawText.includes("CTCM")) {
+        const afterCtcm = rawText.replace(/^.*?CTCM/i, "");
+        const match = afterCtcm.match(/^([A-Z]{2})?(?:HK\d*)?\/(.*)/i);
+        const carrier = (match && match[1]) || (seg ? seg.carrier : "BS");
+        const phoneNum = (match && match[2]) || afterCtcm.replace(/^.*?\//, "");
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSRCTCM" + carrier + " HK  /" + phoneNum + "-" + paxName;
+      } else {
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSR-" + rawText + " " + pax1Formatted;
+      }
+      serviceLines.push(lineText);
+    });
+  } else {
+    serviceLines.push("NO SSR DATA IN PNR");
+  }
+  serviceLines.push("NO OSI EXISTS");
+
+  const filedFare = s.fare ? ["FILED FARE", "FQG 1        BDT " + s.fare.total.toLocaleString(), "GRAND TOTAL INCLUDING TAXES     BDT " + s.fare.total.toLocaleString(), "E-TKT REQUIRED", "BAGGAGE ALLOWANCE", "ADT  " + (seg ? seg.carrier + " " + seg.origin + seg.destination + "  2PC" : "2PC")] : ["NO FILED FARE DATA IN PNR"];
+
   const displays = {
-    overview: (s.filedFare ? ["** FILED FARE DATA EXISTS **  >*FF"] : []).concat(vendorExists, s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []),
-    all: (s.filedFare ? ["** FILED FARE DATA EXISTS **  >*FF"] : []).concat(vendorExists, s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []).concat(["", phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks], s.ssr && s.ssr.length ? ["", ...service] : [], s.filedFare ? ["", ...filedFare] : []),
+    all: [phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks, "", ...serviceLines, ...(s.filedFare ? ["", ...filedFare] : [])],
     phone: [phone],
     ticketing: [ticketing],
-    vendorLocator,
-    vendorRemarks,
-    service,
-    filedFare
+    vendorLocator: vendorLocator,
+    vendorRemarks: vendorRemarks,
+    service: serviceLines,
+    filedFare: filedFare
   };
-  if (leftVendorBox) leftVendorBox.hidden = true;
-  leftSegmentNotes.textContent = (displays[display] || vendorExists).join("\n");
-  leftSegmentNotes.classList.add("pnr-details");
-  leftSegmentNotes.hidden = false;
+
+  const contentLines = displays[display] || [];
+  if (contentLines.length) {
+    leftDetails.innerHTML = contentLines.join("\n");
+    leftDetails.hidden = false;
+  } else {
+    leftDetails.innerHTML = "";
+    leftDetails.hidden = true;
+  }
 }
 
 function updateTab() {
@@ -680,7 +735,12 @@ function processCommand(raw) {
 
   if (resp.clearTerminal) clearScreen();
   if (resp.leftDisplay && resp.leftDisplay !== "overview") renderLeftPNRDisplay(resp.leftDisplay);
-  if (resp.kind === "end" || (resp.leftDisplay === "overview") || cmd.toUpperCase() === "IR" || cmd.toUpperCase() === "*RV") {
+    if (resp.kind === "end" || (resp.leftDisplay === "overview") || cmd.toUpperCase() === "IR" || cmd.toUpperCase() === "*RV") {
+    activeLeftCommand = null;
+    if (leftDetails) {
+      leftDetails.innerHTML = "";
+      leftDetails.hidden = true;
+    }
     if (leftSegmentNotes) {
       leftSegmentNotes.classList.remove("pnr-details");
       leftSegmentNotes.textContent = "";

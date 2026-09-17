@@ -80,7 +80,7 @@
       if (!this.state.locator) this.state.locator = genLocator();
       const segment = Object.assign({}, flight, { segNum: this.state.segments.length + 1, soldClass: cls, paxCount, status: "HK" });
       this.state.segments.push(segment);
-      return { resp: { lines: [`${segment.segNum} ${segment.carrier} ${segment.number} ${cls}${paxCount} ${segment.origin}${segment.destination} HK`], kind: "sell", segment, leftPaneNotes: segment.notes || [] } };
+      return { resp: { lines: [`${segment.segNum} ${segment.carrier} ${segment.number} ${cls}${paxCount} ${segment.origin}${segment.destination} HK`,], kind: "sell", segment, leftPaneNotes: segment.notes || [] } };
     }
 
     process(raw) {
@@ -93,37 +93,33 @@
         return { lines: [
           "GELLELIO GALILEO — CORE TRAINING COMMANDS",
           "─────────────────────────────────────────",
-          "SON/AGENCY/PASSWORD     Sign in",
-          "SOF                     Sign out",
-          "A01APRDACJED            Display availability (date+orig+dest)",
-          "MD  / MU / MT / MB      Move down / up / top / bottom",
-          "N1Y1                    Sell: line 1, class Y, 1 pax",
-          "N/SURNAME/FIRSTNAME MR  Add passenger name",
-          "9/MOBILE-BD/88017XXXXX  Add phone contact",
-          "T-01APR                 Ticketing time limit",
-          "RF-AGENTNAME            Received from",
-          "ER  or  E               End transaction (save PNR)",
-          "*LOCATOR                Retrieve PNR",
+          "SON/ZHA                 Sign on with staff initials",
+          "SOF                     Sign off",
+          "A22JUNDACDXB            Neutral availability",
+          "A22JUNDACDXB*EK         Carrier-specific availability",
+          "MD / MU / MT / MB       Move down / up / top / bottom",
+          "N1Y1                    Sell 1 seat, Y class, line 1",
+          "N.RAHMAN/MD HAFIZUR MR  Name insert (adult)",
+          "P.T*AGENCY REF NAME 01  Phone field (max 53 characters)",
+          "T.T*                    Ticketing agreement (mandatory)",
+          "R.H                     Received field",
+          "ER                      End and retrieve",
+          "IR                      Redisplay booking file",
+          "*LOCATOR                Open PNR",
           "*ALL                    Display all PNR elements",
-          "FQ                      Fare quote",
-          "FXP                     Store fare (create TST)",
-          "TKPFS/DTDAD             Issue e-ticket",
-          "X1                      Cancel segment 1",
-          "SI.SSR MEAL             Add special service",
-          "C DAC                   Decode airport code",
-          "IG                      Ignore (discard unsaved PNR)",
-          "LESSON BASIC            Show basic booking lesson steps",
-          "LESSON TICKETING        Show fare & ticketing lesson",
-          "LESSON MODIFICATION     Show modification lesson"
+          "FQCEK/ET                Fare load",
+          "XI                      Cancel booking",
+          "LESSON BASIC            Show booking steps from course sheet"
         ]};
       }
 
       // ── SIGN IN: SON/AGENCY/PASSWORD ──
       if (cmd.startsWith("SON/")) {
-        const parts = cmd.slice(4).split("/");
-        if (parts.length < 2) return this.error("FORMAT: SON/AGENCY/PASSWORD");
+        const initials = cmd.slice(4).trim();
+        if (!initials) return this.error("FORMAT: SON/ZHA");
         this.state.signedIn = true;
         this.state.officeId = "DACVS086JJ";
+        this.state.signOn = initials.split("/")[0];
         return { lines: [
           "SIGN IN COMPLETE",
           `OFFICE ID  : ${this.state.officeId}`,
@@ -138,7 +134,7 @@
         return { lines: ["SIGN OFF COMPLETE", `OFFICE: ${this.state.officeId || "DACVS086JJ"}`] };
       }
 
-      if (!this.state.signedIn) return this.error("SIGN IN REQUIRED - ENTER: SON/AGENCY/PASSWORD");
+      if (!this.state.signedIn) return this.error("SIGN IN REQUIRED - ENTER: SON/ZHA");
 
       // ── MOVE DISPLAY (availability paging) ──
       if (cmd === "MD" || cmd === "MU" || cmd === "MT" || cmd === "MB") {
@@ -156,9 +152,10 @@
         return this._availScreen();
       }
 
-      // ── AVAILABILITY: A01APRDACJED or A01APRDACJED*SV ──
+      // ── AVAILABILITY: A22JUNDACDXB  /  A22JUNDACDXB*EK  /  A22JUNDACDXB.D ──
       if (cmd.endsWith("/") && cmd.startsWith("A")) return this.process(cmd.slice(0, -1));
-      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})([\/*][A-Z0-9]{2,3})?$/);
+      const cleanAvailCmd = cmd.replace(/#+$/, "");
+      const avail = cleanAvailCmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})([\/*][A-Z0-9]{2,3})?(\.D)?$/);
       if (avail) {
         const [, dateStr, orig, dest, pref] = avail;
         const aOrig = GalileoAirports.find(orig);
@@ -167,7 +164,7 @@
         if (!aDest) return this.error(`AIRPORT NOT FOUND - ${dest} - USE C CODE`);
         if (orig === dest) return this.error("ORIGIN AND DESTINATION MUST DIFFER");
 
-        const carrier = pref && pref.length === 3 ? pref.slice(1) : null;
+        const carrier = pref ? pref.slice(1) : null;
         const results = GalileoFlights.search({ origin: orig, destination: dest, carrier: carrier, date: dateStr });
         this.state.results = results;
         this.state.availability = true;
@@ -182,32 +179,24 @@
         return this._availScreen();
       }
 
-      // ── SELL: N1Y1, N1J2, N2B1 ──
-      const sell = cmd.match(/^N(\d+)([A-Z])(\d+)$/);
+      // ── SELL: N3K2 = pax + class + line (Wings Fly course sheet) ──
+      const sellMulti = cmd.match(/^N(\d+)([A-Z])(\d+)([A-Z])(\d+)$/);
+      if (sellMulti) {
+        const paxCount = parseInt(sellMulti[1]);
+        const first = this._sellOne(parseInt(sellMulti[3]), sellMulti[2], paxCount);
+        if (first.error) return first.error;
+        const second = this._sellOne(parseInt(sellMulti[5]), sellMulti[4], paxCount);
+        if (second.error) return second.error;
+        return second.resp;
+      }
+      const sell = cmd.match(/^N(\d+)([A-Z])(\d+)\*?$/);
       if (sell) {
-        const lineNum = parseInt(sell[1]);
-        const cls     = sell[2];
-        const paxCount = parseInt(sell[3]);
-        if (!this.state.availability || !this.state.results.length)
-          return this.error("DISPLAY AVAILABILITY FIRST - ENTER: A01APRDACJED");
-        const flight = GalileoFlights.byLine(lineNum, this.state.results);
-        if (!flight) return this.error(`LINE ${lineNum} NOT FOUND IN AVAILABILITY`);
-
-        const seg = clone(flight);
-        seg.soldClass = cls;
-        seg.paxCount  = paxCount;
-        seg.segNum    = this.state.segments.length + 1;
-        this.state.segments.push(seg);
-
-        // Left pane content is built from segment notes
-        return {
-          lines: [
-            `${seg.segNum} ${seg.carrier} ${seg.number} ${cls} ${seg.date} ${seg.origin}${seg.destination} HS${paxCount} ${seg.depart} ${seg.arrive} O  ${dayOfDate(seg.date)}`
-          ],
-          kind: "sell",
-          leftPaneNotes: seg.notes || [],
-          segment: seg
-        };
+        const paxCount = parseInt(sell[1]);
+        const cls      = sell[2];
+        const lineNum  = parseInt(sell[3]);
+        const sold = this._sellOne(lineNum, cls, paxCount);
+        if (sold.error) return sold.error;
+        return sold.resp;
       }
 
       // ── DECODE: C DAC ──
@@ -221,7 +210,7 @@
         return this.error("CODE NOT FOUND");
       }
 
-      // ── NAME: N/SURNAME/FIRSTNAME TITLE ──
+      // ── NAME: N.RAHMAN/MD HAFIZUR MR  (also N/ from live Smartpoint) ──
       const directName = raw.trim();
       const isNameCommand = cmd.startsWith("N.") || cmd.startsWith("N/") ||
         /^[A-Z][A-Z .'-]*\/[A-Z][A-Z .'-]*\s+(?:MR|MRS|MS|MISS|MSTR|CHD|INF)$/i.test(directName);
@@ -247,43 +236,51 @@
         };
       }
 
-      // ── PHONE / AGENCY REFERENCE: only P.T* is fixed; its contents are free text. ──
-      if (cmd.startsWith("P.T*") || cmd.startsWith("P.P*")) {
+      // ── PHONE: P.T*WINGS FLY ... REF HAFIZ 01618000488 ──
+      if (cmd.startsWith("P.T*") || cmd.startsWith("P.P*") || cmd.startsWith("P.")) {
+        if (!cmd.startsWith("P.T*") && !cmd.startsWith("P.P*")) return this.error("CHECK FORMAT");
         const phone = raw.trim().slice(4).trim();
         if (!phone) return this.error("CHECK FORMAT - ENTER TEXT AFTER P.T*");
         this.state.phones.push(phone);
         return { lines: ["P.T*" + phone.toUpperCase()] };
       }
 
-      // ── PHONE: 9/MOBILE-BD/88017XXXXXXX or 9/88017XXXXXXX ──
+      // ── PHONE: 9/MOBILE-BD/88017XXXXXXX ──
       if (cmd.startsWith("9/")) {
         const phone = cmd.slice(2);
+        if (!phone) return this.error("CHECK FORMAT");
         this.state.phones.push(phone);
         return { lines: [`PHONE-${phone}`] };
       }
 
-      // ── TICKETING TL: T-01APR ──
+      // ── TICKETING AGREEMENT: T.T* ──
       if (cmd === "T.T*" || cmd.startsWith("T.T*")) {
         this.state.ticketing = "T.T*";
         return { lines: ["T.T*"] };
       }
-      if (cmd.startsWith("T-")) {
-        this.state.ticketing = cmd.slice(2);
-        return { lines: [`TL ${this.state.ticketing}`] };
+      if (cmd === "T.T" || cmd.startsWith("T-")) {
+        return this.error("CHECK FORMAT");
       }
 
-      // ── RECEIVED FROM: RF-NAME ──
+      // ── RECEIVED FIELD: R.H ──
+      if (cmd.startsWith("R.")) {
+        this.state.receivedFrom = raw.trim().slice(2) || "H";
+        return { lines: ["R." + this.state.receivedFrom.toUpperCase()] };
+      }
       if (cmd.startsWith("RF-")) {
         this.state.receivedFrom = raw.trim().slice(3);
-        return { lines: [`RF-${this.state.receivedFrom.toUpperCase()}`] };
+        return { lines: ["R." + this.state.receivedFrom.toUpperCase()] };
       }
 
       // ── END & RETRIEVE: ER or E ──
       if (cmd === "ER" || cmd === "E") {
         if (!this.state.segments.length) return this.error("NO SEGMENT - ADD AIR SEGMENT FIRST");
-        if (!this.state.names.length)    return this.error("NO PASSENGER NAME - ADD WITH N/SURNAME/FIRSTNAME TITLE");
+        if (!this.state.names.length)    return this.error("CHECK FORMAT - NAME FIELD REQUIRED");
+        // A Galileo PNR can be end-transacted once itinerary and passenger
+        // name exist. Contact, ticketing and received fields may be supplied
+        // before or after this point in the training flow.
         this.state.saved   = true;
-        this.state.locator = genLocator();
+        this.state.locator = this.state.locator || genLocator();
         const now = new Date();
         const expiry = new Date(now.getTime() + 48 * 60 * 60 * 1000);
         const month = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
@@ -311,6 +308,8 @@
           osk: this.state.osk
         });
         this.lastSavedPnr = clone(this.state.savedPnr);
+        // Smartpoint commits the BF to the left work area after ER; it does
+        // not print an RLR receipt in the terminal pane.
         return { lines: [], kind: "end", clearTerminal: true };
       }
 
@@ -365,14 +364,23 @@
         return this._displayPNR();
       }
 
+      // ── FARE SHOPPING / FARE QUOTE: FQ ──
       // FS3DAC15NOVLHR = 3 adults; FS2ADT1CHDDAC15NOVLHR = 2 adults + 1 child.
       // Smartpoint may append passenger/price qualifiers, e.g. +P1-2.3*07.
+      // They refine the display but do not change this training simulator's fare search.
       let fsCommand = cmd.replace(/\+P[0-9.*-]+$/, "");
       let passengers = { adt: 1, chd: 0 };
       let partyMatch = fsCommand.match(/^FS(\d+)ADT[/.]?(\d+)CHD(.+)$/);
-      if (partyMatch) { passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) }; fsCommand = "FS" + partyMatch[3]; }
-      else if ((partyMatch = fsCommand.match(/^FS(\d+)\.(\d+)C(.+)$/))) { passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) }; fsCommand = "FS" + partyMatch[3]; }
-      else if ((partyMatch = fsCommand.match(/^FS(\d+)([A-Z]{3}\d{2}[A-Z]{3}[A-Z]{3}(?:\d{2}[A-Z]{3}[A-Z]{3})?)$/))) { passengers = { adt: parseInt(partyMatch[1]), chd: 0 }; fsCommand = "FS" + partyMatch[2]; }
+      if (partyMatch) {
+        passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) };
+        fsCommand = "FS" + partyMatch[3];
+      } else if ((partyMatch = fsCommand.match(/^FS(\d+)\.(\d+)C(.+)$/))) {
+        passengers = { adt: parseInt(partyMatch[1]), chd: parseInt(partyMatch[2]) };
+        fsCommand = "FS" + partyMatch[3];
+      } else if ((partyMatch = fsCommand.match(/^FS(\d+)([A-Z]{3}\d{2}[A-Z]{3}[A-Z]{3}(?:\d{2}[A-Z]{3}[A-Z]{3})?)$/))) {
+        passengers = { adt: parseInt(partyMatch[1]), chd: 0 };
+        fsCommand = "FS" + partyMatch[2];
+      }
       const fareSearch = fsCommand.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
       const roundTripFareSearch = fsCommand.match(/^FS([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})(\d{2}[A-Z]{3})([A-Z]{3})$/);
       if (cmd === "FQ" || /^FQ[A-Z]{3}\/ET$/.test(cmd) || fareSearch || roundTripFareSearch) {
@@ -466,12 +474,18 @@
         const passenger = serviceMatch[1];
         const code = serviceMatch[2];
         const detail = serviceMatch[3].replace(/^\//, "").replace(/\*$/, "").trim();
-        const accepted = ["CTCE", "CTCM", "MOML", "SPML", "VGML", "AVML", "WCHR", "WCHS", "WCHC"];
-        if (!accepted.includes(code)) return this.error("INVALID SSR CODE - USE CTCE, CTCM, MOML, SPML, VGML, AVML OR WCHR");
+        const accepted = ["DOCS", "CTCE", "CTCM", "MOML", "SPML", "VGML", "AVML", "WCHR", "WCHS", "WCHC"];
+        if (!accepted.includes(code)) return this.error("INVALID SSR CODE - USE DOCS, CTCE, CTCM, MOML, SPML, VGML, AVML OR WCHR");
         if ((code === "WCHR" || code === "WCHS" || code === "WCHC") && !detail) return this.error("WHEELCHAIR SSR MUST BE FOLLOWED BY TEXT");
-        const labels = { CTCE:"EMAIL", CTCM:"MOBILE", MOML:"MUSLIM MEAL", SPML:"SPECIAL MEAL", VGML:"VEGETARIAN MEAL", AVML:"ASIAN VEGETARIAN MEAL", WCHR:"WHEELCHAIR TO RAMP", WCHS:"WHEELCHAIR - STEPS", WCHC:"WHEELCHAIR - CABIN SEAT" };
-        const value = `P${passenger} ${code}${detail ? " " + detail : ""}`;
-        this.state.ssr.push(value);
+        const labels = { DOCS:"PASSPORT", CTCE:"EMAIL", CTCM:"MOBILE", MOML:"MUSLIM MEAL", SPML:"SPECIAL MEAL", VGML:"VEGETARIAN MEAL", AVML:"ASIAN VEGETARIAN MEAL", WCHR:"WHEELCHAIR TO RAMP", WCHS:"WHEELCHAIR - STEPS", WCHC:"WHEELCHAIR - CABIN SEAT" };
+        const ssrItem = {
+          passenger,
+          code,
+          detail,
+          raw: raw.trim().replace(/\*+$/, "").trim(),
+          toString: function() { return `P${this.passenger} ${this.code}${this.detail ? " " + this.detail : ""}`; }
+        };
+        this.state.ssr.push(ssrItem);
         return { lines: [`SSR ${labels[code]} ADDED FOR PASSENGER ${passenger}${detail ? ": " + detail : ""}`], kind: "service" };
       }
 

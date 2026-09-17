@@ -7,6 +7,7 @@ const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
 const leftVendorBox = document.getElementById("leftVendorBox");
+const leftDetails   = document.getElementById("leftDetails");
 const leftSegment = document.getElementById("leftSegment");
 const leftPnrHeader = document.getElementById("leftPnrHeader");
 const leftPassenger = document.getElementById("leftPassenger");
@@ -27,7 +28,10 @@ const historyInput = { selected: -1 };
 const HISTORY_KEY = "gellelio-command-history-v1";
 
 const engine = new GalileoCommandEngine();
-try { const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); if (Array.isArray(stored)) engine.state.history = stored.slice(-100); } catch (_) {}
+try {
+  const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  if (Array.isArray(stored)) engine.state.history = stored.slice(-100);
+} catch (_) {}
 let histIdx = -1;
 let lastCommand = "";
 let activeLeftCommand = "";
@@ -65,7 +69,9 @@ function hideTip() {
   if (tipEl) tipEl.hidden = true;
 }
 
-function persistHistory() { try { localStorage.setItem(HISTORY_KEY, JSON.stringify((engine.state.history || []).slice(-100))); } catch (_) {} }
+function persistHistory() {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify((engine.state.history || []).slice(-100))); } catch (_) {}
+}
 
 function renderHistory() {
   if (!historyList) return;
@@ -130,18 +136,27 @@ function deleteHistorySelection() {
 }
 
 function closeBrands() { if (brandPanel) brandPanel.hidden = true; }
+
 function openBrands(flight, bookingClass) {
   if (!brandPanel || !flight) return;
   const available = flight.classes && flight.classes[bookingClass];
   const families = [["Promotion International", "Q9  V9  G9  B9"], ["Saver International", "T9  L9  H9"], ["Freedom International", "Y9  M9  K9  N9"], ["Blue Ribbon International", "C9  D9  J9"]];
   document.getElementById("brandSegment").textContent = flight.line + " " + flight.origin + ">" + flight.destination;
   document.getElementById("brandFlight").textContent = flight.date + "  " + flight.origin + " " + flight.depart + " > " + flight.destination + " " + flight.arrive + " / " + flight.carrier + " " + flight.number;
-  const familyEl = document.getElementById("brandFamilies"); familyEl.innerHTML = "";
-  families.forEach(function(family, index) { const item = document.createElement("button"); item.type = "button"; item.className = "brand-family" + (index === 2 ? " active" : ""); item.innerHTML = "<b>" + family[0] + "</b><span>" + family[1] + "</span>"; familyEl.appendChild(item); });
+  const familyEl = document.getElementById("brandFamilies");
+  familyEl.innerHTML = "";
+  families.forEach(function(family, index) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "brand-family" + (index === 2 ? " active" : "");
+    item.innerHTML = "<b>" + family[0] + "</b><span>" + family[1] + "</span>";
+    familyEl.appendChild(item);
+  });
   document.getElementById("brandHero").innerHTML = "<div class='brand-logo'>" + flight.carrier + "</div><div><b>" + flight.carrier + " " + flight.number + "</b><span>" + flight.date + "<br>" + flight.origin + " " + flight.depart + "  >  " + flight.destination + " " + flight.arrive + "</span></div>";
   document.getElementById("brandDescription").innerHTML = "<h3>Currently viewing " + bookingClass + " Class</h3><p><b>" + (available === "C" ? "Waitlist only" : available + " seats available") + "</b></p><p>Economy fare brand for " + (flight.airline_full || "the operating carrier") + ". Confirm fare rules and ticketing conditions before selling.</p><ul><li>Cabin baggage allowance included</li><li>Seat selection subject to availability</li><li>Changes and refund rules vary by fare</li><li>Meals and special services by carrier policy</li></ul>";
   const items = [["▣", "Baggage Allowance", "Included"], ["▰", "Hand-carry Allowance", "Included"], ["◆", "CHANGE FEE", "Varies based on flight"], ["!", "Rebooking", "Varies based on flight"], ["▾", "Pre Reserved Seat", "Available"], ["♨", "Inflight Meal", "Carrier policy"]];
-  document.getElementById("brandAncillaries").innerHTML = items.map(function(item) { return "<div class='ancillary'><i>" + item[0] + "</i><b>" + item[1] + "</b><span>" + item[2] + "</span></div>"; }).join(""); brandPanel.hidden = false;
+  document.getElementById("brandAncillaries").innerHTML = items.map(function(item) { return "<div class='ancillary'><i>" + item[0] + "</i><b>" + item[1] + "</b><span>" + item[2] + "</span></div>"; }).join("");
+  brandPanel.hidden = false;
 }
 
 if (historyMenu) historyMenu.addEventListener("click", openHistory);
@@ -177,17 +192,25 @@ function showFlightDetails(flight, bookingClass) {
     "USE N" + flight.line + bookingClass + "1 TO SELL ONE SEAT IN THIS CLASS."
   ];
   const detailLines = [
-    "FLIGHT / CLASS DETAILS", "",
+    "FLIGHT / CLASS DETAILS",
+    "",
     flight.line + ". " + flight.carrier + " " + flight.number + "  " + (flight.airline_full || "OPERATING CARRIER"),
-    "BOOKING CLASS " + bookingClass + "  " + seatStatus, "",
+    "BOOKING CLASS " + bookingClass + "  " + seatStatus,
+    "",
     "DATE       " + flight.date + "   OPERATING " + (flight.freq || "DAILY"),
     "ROUTE      " + flight.origin + "  -  " + flight.destination,
     "DEPARTS    " + flight.depart + "  TERMINAL " + (flight.termOrig || "1"),
     "ARRIVES    " + flight.arrive + "  TERMINAL " + (flight.termDest || "1"),
     "AIRCRAFT   " + (flight.equip || "SEE CARRIER"),
-    "STATUS     CONFIRM ON AVAILABILITY", "",
-    "TRAVEL INFORMATION", "------------------"
-  ].concat(notes).concat(["", "COMMAND: N" + flight.line + bookingClass + "1  (SELL 1 SEAT)", "CLICK ANOTHER CLASS TO VIEW ITS DETAILS"]);
+    "STATUS     CONFIRM ON AVAILABILITY",
+    "",
+    "TRAVEL INFORMATION",
+    "------------------"
+  ].concat(notes).concat([
+    "",
+    "COMMAND: N" + flight.line + bookingClass + "1  (SELL 1 SEAT)",
+    "CLICK ANOTHER CLASS TO VIEW ITS DETAILS"
+  ]);
   setLeftPane(detailLines, true);
 }
 
@@ -333,12 +356,30 @@ function renderFare(resp) {
 function bookFareShopOption(index) {
   const option = engine.state.fare && engine.state.fare.options && engine.state.fare.options[index];
   if (!option) return;
-  const segment = { segNum: 1, carrier: option.carrier.replace("#", ""), number: option.number, soldClass: option.cls, date: option.date, origin: option.origin, destination: option.destination, depart: option.depart, arrive: option.arrive, termOrig: "1", termDest: "1", paxCount: 1, status: "HS", notes: ["DEPARTS " + option.origin + " TERMINAL 1 - ARRIVES " + option.destination + " TERMINAL 1", "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA MAY BE PASSED TO GOVERNMENT AUTHORITIES FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"] };
-  engine.state.segments = [segment]; engine.state.priced = true;
-  const sold = ["************************ SOLD SEGMENTS ************************", " 1. " + segment.carrier + "  " + segment.number + " " + segment.soldClass + " " + segment.date + " " + segment.origin + segment.destination + " " + segment.status + " " + segment.depart + " " + segment.arrive + "       E", "DEPARTS " + segment.origin + " TERMINAL 1", "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION", "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES", "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES", "", "************************* FILED FARE *************************", "FARE OPTION " + (index + 1) + " SELECTED - TOTAL BDT " + (option.partyTotal || option.total), "NO PLATING CARRIER FOUND"];
+  const segment = {
+    segNum: 1, carrier: option.carrier.replace("#", ""), number: option.number,
+    soldClass: option.cls, date: option.date, origin: option.origin, destination: option.destination,
+    depart: option.depart, arrive: option.arrive, termOrig: "1", termDest: "1", paxCount: 1, status: "HS",
+    notes: ["DEPARTS " + option.origin + " TERMINAL 1 - ARRIVES " + option.destination + " TERMINAL 1", "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA MAY BE PASSED TO GOVERNMENT AUTHORITIES FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"]
+  };
+  engine.state.segments = [segment];
+  engine.state.priced = true;
+  const sold = [
+    "************************ SOLD SEGMENTS ************************",
+    " 1. " + segment.carrier + "  " + segment.number + " " + segment.soldClass + " " + segment.date + " " + segment.origin + segment.destination + " " + segment.status + " " + segment.depart + " " + segment.arrive + "       E",
+    "DEPARTS " + segment.origin + " TERMINAL 1",
+    "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS",
+    "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION",
+    "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES",
+    "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES", "",
+    "************************* FILED FARE *************************",
+    "FARE OPTION " + (index + 1) + " SELECTED - TOTAL BDT " + (option.partyTotal || option.total),
+    "NO PLATING CARRIER FOUND"
+  ];
   setScreen(sold.join("\n"));
   renderLeftSegment(segment, segment.notes);
-  update(); inputEl.focus();
+  update();
+  inputEl.focus();
 }
 
 function setLeftPane(lines, showButtons) {
@@ -350,6 +391,7 @@ function setLeftPane(lines, showButtons) {
   if (leftPassenger) leftPassenger.hidden = true;
   if (leftPnrHeader) leftPnrHeader.hidden = true;
   if (leftVendorBox) leftVendorBox.hidden = true;
+  if (leftDetails) { leftDetails.innerHTML = ""; leftDetails.hidden = true; }
   if (leftBtns) leftBtns.style.display = "none";
 }
 
@@ -477,8 +519,21 @@ function renderLeftSegment(seg, notes, hideNotes) {
 function refreshLeftVendorBox() {
   if (!leftVendorBox) return;
   const s = engine.state;
-  const isViewingPnrDetails = leftSegmentNotes && !leftSegmentNotes.hidden && leftSegmentNotes.classList.contains("pnr-details");
-  if (s.segments && s.segments.length && (s.vendorLocator || s.receivedFrom || s.saved) && !isViewingPnrDetails) {
+  if (!s.segments || !s.segments.length) {
+    leftVendorBox.hidden = true;
+    return;
+  }
+  const lines = [];
+  if (s.vendorLocator || s.receivedFrom || s.saved) {
+    lines.push('<div class="vendor-exists-line">** VENDOR LOCATOR DATA EXISTS **  <span class="cmd-link" data-cmd="*VL">&gt;*VL</span></div>');
+    lines.push('<div class="vendor-exists-line">** VENDOR REMARKS DATA EXISTS **  <span class="cmd-link" data-cmd="*VR">&gt;*VR</span></div>');
+  }
+  if (s.ssr && s.ssr.length) {
+    lines.push('<div class="vendor-exists-line">** SERVICE INFORMATION EXISTS **  <span class="cmd-link" data-cmd="*SI">&gt;*SI</span></div>');
+  }
+  if (lines.length) {
+    const notifContainer = document.getElementById("vendorNotifications") || leftVendorBox;
+    notifContainer.innerHTML = lines.join("");
     leftVendorBox.hidden = false;
   } else {
     leftVendorBox.hidden = true;
@@ -495,13 +550,14 @@ function refreshLeftButtons() {
   const commands = ["*ALL"];
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
-  if (s.filedFare) commands.push("*FF");
-  if (s.ssr && s.ssr.length) commands.push("*SI");
   if (s.vendorLocator || s.receivedFrom || s.saved) {
     commands.push("*VL");
-  } else {
-    commands.push("*RV");
+    commands.push("*VR");
   }
+  if (s.ssr && s.ssr.length) commands.push("*SI");
+  if (s.filedFare) commands.push("*FF");
+  commands.push("*RV");
+
   leftBtns.innerHTML = commands.map(function(command) {
     return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>';
   }).join("");
@@ -510,30 +566,83 @@ function refreshLeftButtons() {
 
 function renderCancelledPNR() {
   const s = engine.state;
-  setLeftPane(["PNR INUSE - IGNORE AND RERETRIEVE", "1-" + ((s.names && s.names[0]) ? s.names[0].replace(/^1-/, "") : "PASSENGER"), "", "** VENDOR LOCATOR DATA EXISTS **  >*VL", "** VENDOR REMARKS DATA EXISTS **  >*VR"], true);
+  setLeftPane([
+    "PNR INUSE - IGNORE AND RERETRIEVE",
+    "1-" + ((s.names && s.names[0]) ? s.names[0].replace(/^1-/, "") : "PASSENGER"),
+    "",
+    "** VENDOR LOCATOR DATA EXISTS **  >*VL",
+    "** VENDOR REMARKS DATA EXISTS **  >*VR"
+  ], true);
 }
 
 function renderLeftPNRDisplay(display) {
   const s = engine.state;
   const seg = s.segments && s.segments[0];
-  if (!seg || !leftSegmentNotes) return;
-  renderLeftSegment(seg, [], true);
-  const vendorExists = ["** VENDOR LOCATOR DATA EXISTS **  >*VL", "** VENDOR REMARKS DATA EXISTS **  >*VR"];
+  if (!leftDetails) return;
+
+  const paxName = (s.names && s.names[0]) ? s.names[0].replace(/^\d+-/, "") : "PASSENGER";
+  const pax1Formatted = "-1" + paxName;
+
   const phone = s.phones && s.phones[0] ? "FONE-CGPT* " + s.phones[0].toUpperCase() : "NO PHONE FIELD IN PNR";
   const ticketing = s.ticketing ? "TKTG-" + s.ticketing : "NO TICKETING FIELD IN PNR";
   const vendorLocator = ["VENDOR LOCATOR", "VLOC-" + (s.vendorLocator || "NOT AVAILABLE")];
   const vendorRemarks = ["VENDOR REMARKS", s.vendorRemarks || "NO VENDOR REMARKS IN PNR"];
-  const service = ["SERVICE INFORMATION"].concat((s.ssr || []).map(function(item) { return "SSR-" + item; }));
-  const filedFare = s.fare ? ["FILED FARE", "FQG 1        BDT " + s.fare.total.toLocaleString(), "GRAND TOTAL INCLUDING TAXES     BDT " + s.fare.total.toLocaleString(), "E-TKT REQUIRED", "BAGGAGE ALLOWANCE", "ADT  " + (s.segments[0] ? s.segments[0].carrier + " " + s.segments[0].origin + s.segments[0].destination + "  2PC" : "2PC")] : ["NO FILED FARE DATA IN PNR"];
+
+  let serviceLines = ["*** SPECIAL SERVICE REQUIREMENT ***", "SEGMENT/PASSENGER RELATED", "*** MANUAL SSR DATA ***"];
+  if (s.ssr && s.ssr.length) {
+    s.ssr.forEach(function(item, idx) {
+      const num = idx + 1;
+      let lineText = "";
+      const rawText = (typeof item === "object" && item.raw) ? item.raw : String(item);
+      if (rawText.includes("DOCS")) {
+        // e.g. SI.P1/SSRDOCSBSHK1/P/BGD/A92766286/BGD/20MAY95/M/20MAY30/KHAN/MD IMRAN
+        const afterDocs = rawText.replace(/^.*?DOCS/i, "");
+        const match = afterDocs.match(/^([A-Z]{2})?(?:HK\d*)?\/(.*)/i);
+        const carrier = (match && match[1]) || (seg ? seg.carrier : "BS");
+        const details = (match && match[2]) || afterDocs.replace(/^.*?\//, "");
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSRDOCS" + carrier + " HK   " + details + " " + pax1Formatted;
+      } else if (rawText.includes("CTCE")) {
+        const afterCtce = rawText.replace(/^.*?CTCE/i, "");
+        const match = afterCtce.match(/^([A-Z]{2})?(?:HK\d*)?\/(.*)/i);
+        const carrier = (match && match[1]) || (seg ? seg.carrier : "BS");
+        const email = (match && match[2]) || afterCtce.replace(/^.*?\//, "");
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSRCTCE" + carrier + " HK  /" + email + "-" + paxName;
+      } else if (rawText.includes("CTCM")) {
+        const afterCtcm = rawText.replace(/^.*?CTCM/i, "");
+        const match = afterCtcm.match(/^([A-Z]{2})?(?:HK\d*)?\/(.*)/i);
+        const carrier = (match && match[1]) || (seg ? seg.carrier : "BS");
+        const phoneNum = (match && match[2]) || afterCtcm.replace(/^.*?\//, "");
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSRCTCM" + carrier + " HK  /" + phoneNum + "-" + paxName;
+      } else {
+        lineText = "  <span class=\"highlight-green\">M " + num + ".</span> SSR-" + rawText + " " + pax1Formatted;
+      }
+      serviceLines.push(lineText);
+    });
+  } else {
+    serviceLines.push("NO SSR DATA IN PNR");
+  }
+  serviceLines.push("NO OSI EXISTS");
+
+  const filedFare = s.fare ? ["FILED FARE", "FQG 1        BDT " + s.fare.total.toLocaleString(), "GRAND TOTAL INCLUDING TAXES     BDT " + s.fare.total.toLocaleString(), "E-TKT REQUIRED", "BAGGAGE ALLOWANCE", "ADT  " + (seg ? seg.carrier + " " + seg.origin + seg.destination + "  2PC" : "2PC")] : ["NO FILED FARE DATA IN PNR"];
+
   const displays = {
-    overview: (s.filedFare ? ["** FILED FARE DATA EXISTS **  >*FF"] : []).concat(vendorExists, s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []),
-    all: (s.filedFare ? ["** FILED FARE DATA EXISTS **  >*FF"] : []).concat(vendorExists, s.ssr && s.ssr.length ? ["** SERVICE INFORMATION EXISTS **  >*SI"] : []).concat(["", phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks], s.ssr && s.ssr.length ? ["", ...service] : [], s.filedFare ? ["", ...filedFare] : []),
-    phone: [phone], ticketing: [ticketing], vendorLocator, vendorRemarks, service, filedFare
+    all: [phone, ticketing, "", ...vendorLocator, "", ...vendorRemarks, "", ...serviceLines, ...(s.filedFare ? ["", ...filedFare] : [])],
+    phone: [phone],
+    ticketing: [ticketing],
+    vendorLocator: vendorLocator,
+    vendorRemarks: vendorRemarks,
+    service: serviceLines,
+    filedFare: filedFare
   };
-  if (leftVendorBox) leftVendorBox.hidden = true;
-  leftSegmentNotes.textContent = (displays[display] || vendorExists).join("\n");
-  leftSegmentNotes.classList.add("pnr-details");
-  leftSegmentNotes.hidden = false;
+
+  const contentLines = displays[display] || [];
+  if (contentLines.length) {
+    leftDetails.innerHTML = contentLines.join("\n");
+    leftDetails.hidden = false;
+  } else {
+    leftDetails.innerHTML = "";
+    leftDetails.hidden = true;
+  }
 }
 
 function updateTab() {
@@ -621,11 +730,17 @@ function processCommand(raw) {
 
   const resp = engine.process(cmd);
 
+  // A fresh availability, or Ignore, must not leave an old fare-detail panel open.
   if (/^A\d{2}[A-Z]{3}/i.test(cmd) || /^(I|IG)$/i.test(cmd)) closeBrands();
 
   if (resp.clearTerminal) clearScreen();
   if (resp.leftDisplay && resp.leftDisplay !== "overview") renderLeftPNRDisplay(resp.leftDisplay);
-  if (resp.kind === "end" || (resp.leftDisplay === "overview") || cmd.toUpperCase() === "IR" || cmd.toUpperCase() === "*RV") {
+    if (resp.kind === "end" || (resp.leftDisplay === "overview") || cmd.toUpperCase() === "IR" || cmd.toUpperCase() === "*RV") {
+    activeLeftCommand = null;
+    if (leftDetails) {
+      leftDetails.innerHTML = "";
+      leftDetails.hidden = true;
+    }
     if (leftSegmentNotes) {
       leftSegmentNotes.classList.remove("pnr-details");
       leftSegmentNotes.textContent = "";
@@ -660,9 +775,11 @@ function processCommand(raw) {
   if (resp.kind === "avail" && resp.flights) {
     renderAvailability(resp);
   } else if ((resp.kind === "sell" || resp.kind === "name") && engine.state.availability && engine.state.results.length) {
-    // Keep the searched flights visible after selling, as in Smartpoint.
+    // Smartpoint keeps the current availability display on screen after a sell.
+    // The new segment is shown in the left work area instead of replacing flights.
     renderAvailability(engine._availScreen());
   } else if (/^(P\.(?:T|P)\*|9\/|T\.T\*|T-|R\.|RF-)/i.test(cmd) && engine.state.availability && engine.state.results.length) {
+    // Smartpoint retains the active availability display while PNR fields are added.
     renderAvailability(engine._availScreen(), cmd);
   } else if (resp.kind === "fare") {
     renderFare(resp);
@@ -751,3 +868,17 @@ function reset() {
 
 window.reset = reset;
 reset();
+
+// ============================================================
+//  TEMPORARY ONE-CLICK LOGIN BYPASS
+//  REMOVE THIS BLOCK BEFORE FINAL PROJECT SUBMISSION
+// ============================================================
+(function autoLogin() {
+  if (engine.state.signedIn) return;
+  engine.state.signedIn = true;
+  engine.state.officeId = "DACVS086JJ";
+  engine.state.signOn = "DEMO";
+  setScreen("SIGN IN COMPLETE\nOFFICE ID  : DACVS086JJ\nDUTY CODE  : SU\nTRAINING   : GELLELIO GALILEO PRACTICE SIMULATOR");
+  update();
+  inputEl.focus();
+})();
