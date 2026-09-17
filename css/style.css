@@ -628,3 +628,30 @@ html, body {
   .right-tools { display: none; }
   .terminal-wrap { grid-column: 1; }
 }
+
+.left-vendor-box {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.left-vendor-box .cart-icon {
+  display: flex;
+  align-items: center;
+}
+
+.vendor-exists-line {
+  color: #fff;
+  font: 16px/1.4 Consolas, monospace;
+  white-space: pre;
+}
+
+.vendor-exists-line .cmd-link {
+  color: #45e945;
+  cursor: pointer;
+}
+
+.vendor-exists-line .cmd-link:hover {
+  text-decoration: underline;
+}

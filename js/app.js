@@ -6,6 +6,7 @@ const inputEl    = document.getElementById("commandInput");
 const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
+const leftVendorBox = document.getElementById("leftVendorBox");
 const leftSegment = document.getElementById("leftSegment");
 const leftPnrHeader = document.getElementById("leftPnrHeader");
 const leftPassenger = document.getElementById("leftPassenger");
@@ -388,6 +389,7 @@ function setLeftPane(lines, showButtons) {
   if (leftSegment) leftSegment.hidden = true;
   if (leftPassenger) leftPassenger.hidden = true;
   if (leftPnrHeader) leftPnrHeader.hidden = true;
+  if (leftVendorBox) leftVendorBox.hidden = true;
   if (leftBtns) leftBtns.style.display = "none";
 }
 
@@ -512,6 +514,17 @@ function renderLeftSegment(seg, notes, hideNotes) {
   if (leftBtns) leftBtns.style.display = "flex";
 }
 
+function refreshLeftVendorBox() {
+  if (!leftVendorBox) return;
+  const s = engine.state;
+  const isViewingPnrDetails = leftSegmentNotes && !leftSegmentNotes.hidden && leftSegmentNotes.classList.contains("pnr-details");
+  if (s.segments && s.segments.length && (s.vendorLocator || s.receivedFrom || s.saved) && !isViewingPnrDetails) {
+    leftVendorBox.hidden = false;
+  } else {
+    leftVendorBox.hidden = true;
+  }
+}
+
 function refreshLeftButtons() {
   if (!leftBtns) return;
   const s = engine.state;
@@ -524,8 +537,11 @@ function refreshLeftButtons() {
   if (s.ticketing) commands.push("*TD");
   if (s.filedFare) commands.push("*FF");
   if (s.ssr && s.ssr.length) commands.push("*SI");
-  if (s.saved) commands.push("*VL", "*VR");
-  commands.push("*RV");
+  if (s.vendorLocator || s.receivedFrom || s.saved) {
+    commands.push("*VL");
+  } else {
+    commands.push("*RV");
+  }
   leftBtns.innerHTML = commands.map(function(command) {
     return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>';
   }).join("");
@@ -568,6 +584,7 @@ function renderLeftPNRDisplay(display) {
     service,
     filedFare
   };
+  if (leftVendorBox) leftVendorBox.hidden = true;
   leftSegmentNotes.textContent = (displays[display] || vendorExists).join("\n");
   leftSegmentNotes.classList.add("pnr-details");
   leftSegmentNotes.hidden = false;
@@ -623,6 +640,7 @@ function update() {
   updateTab();
   updatePNR();
   refreshLeftButtons();
+  refreshLeftVendorBox();
   refreshLeftPnrHeader();
   refreshLeftPassenger();
   mark();
@@ -749,7 +767,7 @@ document.addEventListener("click", function(e) {
     closeHistory();
     return;
   }
-  const btn = e.target.closest(".left-btn");
+  const btn = e.target.closest(".left-btn, [data-cmd]");
   if (btn && btn.dataset.cmd) {
     activeLeftCommand = btn.dataset.cmd;
     processCommand(btn.dataset.cmd);
