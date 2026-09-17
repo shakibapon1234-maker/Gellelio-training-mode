@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Gellelio Galileo Training Simulator — CSS
    Visual target: Travelport Smartpoint terminal (dark UI)
    ============================================================ */
@@ -116,6 +116,14 @@ html, body {
 .left-segment {
   padding: 16px 24px 0;
   background: transparent;
+}
+
+.left-pnr-header {
+  min-height: 22px;
+  color: #fff;
+  font: 16px/1.4 Consolas, monospace;
+  white-space: pre;
+  margin-bottom: 2px;
 }
 
 .left-passenger {

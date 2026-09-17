@@ -77,6 +77,7 @@
       if (!flight) return { error: this.error(`LINE ${lineNum} NOT FOUND IN AVAILABILITY`) };
       const seats = flight.classes && flight.classes[cls];
       if (seats === undefined || seats === "C" || seats === 0) return { error: this.error(`${cls} CLASS CLOSED ON LINE ${lineNum}`) };
+      if (!this.state.locator) this.state.locator = genLocator();
       const segment = Object.assign({}, flight, { segNum: this.state.segments.length + 1, soldClass: cls, paxCount, status: "HK" });
       this.state.segments.push(segment);
       return { resp: { lines: [`${segment.segNum} ${segment.carrier} ${segment.number} ${cls}${paxCount} ${segment.origin}${segment.destination} HK`,], kind: "sell", segment, leftPaneNotes: segment.notes || [] } };

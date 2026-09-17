@@ -7,6 +7,7 @@ const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
 const leftSegment = document.getElementById("leftSegment");
+const leftPnrHeader = document.getElementById("leftPnrHeader");
 const leftPassenger = document.getElementById("leftPassenger");
 const leftSegmentHeader = document.getElementById("leftSegmentHeader");
 const leftSegmentNotes = document.getElementById("leftSegmentNotes");
@@ -386,6 +387,7 @@ function setLeftPane(lines, showButtons) {
   }
   if (leftSegment) leftSegment.hidden = true;
   if (leftPassenger) leftPassenger.hidden = true;
+  if (leftPnrHeader) leftPnrHeader.hidden = true;
   if (leftBtns) leftBtns.style.display = "none";
 }
 
@@ -434,6 +436,29 @@ function getSegmentDayCode(dateStr, depart, arrive) {
   return depDay;
 }
 
+function refreshLeftPnrHeader() {
+  if (!leftPnrHeader) return;
+  const s = engine.state;
+  if (s.segments && s.segments.length) {
+    if (!s.locator) {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let loc = "";
+      for (let i = 0; i < 6; i++) loc += chars[Math.floor(Math.random() * chars.length)];
+      s.locator = loc;
+    }
+    const month = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const now = new Date();
+    const stamp = String(now.getDate()).padStart(2, "0") + month[now.getMonth()];
+    const office = (s.officeId || "DACVS086JJ").replace(/^DAC(VS0)?/i, "") || "86JJ";
+    const officeStr = office.includes("MR") ? office : (office + "MR");
+    leftPnrHeader.textContent = s.locator + "/MR DACOU " + officeStr + " AG 42341084 " + stamp;
+    leftPnrHeader.hidden = false;
+  } else {
+    leftPnrHeader.textContent = "";
+    leftPnrHeader.hidden = true;
+  }
+}
+
 function refreshLeftPassenger() {
   if (!leftPassenger) return;
   const name = engine.state.names && engine.state.names[0];
@@ -443,7 +468,9 @@ function refreshLeftPassenger() {
 
 function renderLeftSegment(seg, notes, hideNotes) {
   if (!seg || !leftSegment || !leftSegmentHeader || !leftSegmentNotes) return;
-  const status = "HS" + (seg.paxCount || 1);
+  const isConfirmed = seg.status === "HK" || engine.state.saved || !!engine.state.receivedFrom;
+  const status = (isConfirmed ? "HK" : (seg.status || "HS")) + (seg.paxCount || 1);
+  const stopInd = isConfirmed ? "0*" : "0";
   const arriveStr = formatArriveTime(seg.depart, seg.arrive);
   const dayCode = getSegmentDayCode(seg.date, seg.depart, arriveStr);
   leftSegmentHeader.innerHTML =
@@ -451,7 +478,7 @@ function renderLeftSegment(seg, notes, hideNotes) {
     '<span class="segment-airline">' + seg.carrier + '</span>  ' + seg.number + ' ' +
     '<span class="segment-class">' + seg.soldClass + '</span> ' +
     seg.date + ' <span class="segment-airline">' + seg.origin + seg.destination + '</span> ' +
-    status + '  ' + seg.depart + ' ' + arriveStr + ' 0' +
+    status + '  ' + seg.depart + ' ' + arriveStr + ' ' + stopInd +
     (dayCode ? ('              ' + dayCode) : '');
   leftSegmentNotes.classList.remove("pnr-details");
 
@@ -596,6 +623,7 @@ function update() {
   updateTab();
   updatePNR();
   refreshLeftButtons();
+  refreshLeftPnrHeader();
   refreshLeftPassenger();
   mark();
   persistHistory();
