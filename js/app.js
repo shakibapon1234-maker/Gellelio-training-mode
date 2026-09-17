@@ -7,7 +7,6 @@ const formEl     = document.getElementById("commandForm");
 const leftMsg    = document.getElementById("leftMessage");
 const leftBtns   = document.getElementById("leftButtons");
 const leftSegment = document.getElementById("leftSegment");
-const leftPnrHeader = document.getElementById("leftPnrHeader");
 const leftPassenger = document.getElementById("leftPassenger");
 const leftSegmentHeader = document.getElementById("leftSegmentHeader");
 const leftSegmentNotes = document.getElementById("leftSegmentNotes");
@@ -381,12 +380,13 @@ function bookFareShopOption(index) {
 }
 
 function setLeftPane(lines, showButtons) {
-  if (leftMsg) leftMsg.textContent = lines.join("\n");
-  if (leftMsg) leftMsg.hidden = false;
-  if (leftBtns) leftBtns.style.display = showButtons ? "flex" : "none";
+  if (leftMsg) {
+    leftMsg.textContent = lines.join("\n");
+    leftMsg.hidden = !lines.length;
+  }
   if (leftSegment) leftSegment.hidden = true;
   if (leftPassenger) leftPassenger.hidden = true;
-  if (leftPnrHeader) leftPnrHeader.hidden = true;
+  if (leftBtns) leftBtns.style.display = "none";
 }
 
 function formatArriveTime(depart, arrive) {
@@ -434,20 +434,6 @@ function getSegmentDayCode(dateStr, depart, arrive) {
   return depDay;
 }
 
-function refreshLeftPnrHeader() {
-  if (!leftPnrHeader) return;
-  const s = engine.state;
-  if (s.locator) {
-    const month = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-    const now = new Date();
-    const stamp = String(now.getDate()).padStart(2, "0") + month[now.getMonth()];
-    const office = (s.officeId || "DACVS086JJ").replace(/^DAC/, "") || "86JJMR";
-    leftPnrHeader.textContent = s.locator + "/MR DACOU " + (office.includes("MR") ? office : office + "MR") + " AG 42341084 " + stamp;
-    leftPnrHeader.hidden = false;
-  } else {
-    leftPnrHeader.textContent = "";
-    leftPnrHeader.hidden = true;
-  }
 }
 
 function refreshLeftPassenger() {
@@ -459,9 +445,7 @@ function refreshLeftPassenger() {
 
 function renderLeftSegment(seg, notes) {
   if (!seg || !leftSegment || !leftSegmentHeader || !leftSegmentNotes) return;
-  const isConfirmed = !!(s.saved || s.locator || seg.status === "HK");
-  const status = (isConfirmed ? "HK" : "HS") + (seg.paxCount || 1);
-  const stopInd = isConfirmed ? "O*" : "0";
+  const status = "HS" + (seg.paxCount || 1);
   const arriveStr = formatArriveTime(seg.depart, seg.arrive);
   const dayCode = getSegmentDayCode(seg.date, seg.depart, arriveStr);
   leftSegmentHeader.innerHTML =
@@ -469,17 +453,19 @@ function renderLeftSegment(seg, notes) {
     '<span class="segment-airline">' + seg.carrier + '</span>  ' + seg.number + ' ' +
     '<span class="segment-class">' + seg.soldClass + '</span> ' +
     seg.date + ' <span class="segment-airline">' + seg.origin + seg.destination + '</span> ' +
-    status + '  ' + seg.depart + ' ' + arriveStr + ' ' + stopInd +
-    (dayCode ? ('        ' + dayCode) : '');
+    status + '  ' + seg.depart + ' ' + arriveStr + ' 0' +
+    (dayCode ? ('              ' + dayCode) : '');
   leftSegmentNotes.classList.remove("pnr-details");
   leftSegmentNotes.textContent = (notes && notes.length ? notes : [
+    "DEPARTS " + seg.origin + " TERMINAL 1  - ARRIVES " + seg.destination + " TERMINAL 3",
+    "*APIS PAX DATA REQUIRED SSR DOCS*",
     "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS",
     "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION",
     "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES",
     "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"
   ]).join("\n");
   if (leftMsg) leftMsg.hidden = true;
-  leftSegmentNotes.hidden = false;
+  leftSegmentNotes.hidden = !(notes && notes.length);
   leftSegment.hidden = false;
   if (leftBtns) leftBtns.style.display = "flex";
 }
@@ -487,7 +473,7 @@ function renderLeftSegment(seg, notes) {
 function refreshLeftButtons() {
   if (!leftBtns) return;
   const s = engine.state;
-  if ((!s.segments || !s.segments.length) && !s.itineraryCancelled) {
+  if (!s.segments || !s.segments.length) {
     leftBtns.style.display = "none";
     return;
   }
@@ -496,11 +482,8 @@ function refreshLeftButtons() {
   if (s.ticketing) commands.push("*TD");
   if (s.filedFare) commands.push("*FF");
   if (s.ssr && s.ssr.length) commands.push("*SI");
-  if (s.saved) {
-    commands.push("*VL", "*VR");
-  } else {
-    commands.push("*RV");
-  }
+  if (s.saved) commands.push("*VL", "*VR");
+  commands.push("*RV");
   leftBtns.innerHTML = commands.map(function(command) {
     return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>';
   }).join("");
@@ -598,7 +581,6 @@ function update() {
   updateTab();
   updatePNR();
   refreshLeftButtons();
-  refreshLeftPnrHeader();
   refreshLeftPassenger();
   mark();
   persistHistory();
@@ -611,7 +593,7 @@ function processCommand(raw) {
   const nav = cmd.toUpperCase();
   const isNav = nav === "MD" || nav === "MU" || nav === "MT" || nav === "MB";
   if (!isNav) lastCommand = cmd.toUpperCase();
-  if (!isNav && !engine.state.segments.length) setLeftPane(["NO B.F. TO DISPLAY", "CREATE OR RETRIEVE FIRST"], false);
+  if (!isNav && !engine.state.segments.length) { if (leftMsg) leftMsg.hidden = true; if (leftSegment) leftSegment.hidden = true; if (leftBtns) leftBtns.style.display = "none"; }
 
   if (cmd.toUpperCase().startsWith("LESSON ")) {
     const lesson = GalileoLessons.get(cmd.slice(7));

@@ -153,7 +153,8 @@
 
       // ── AVAILABILITY: A22JUNDACDXB  /  A22JUNDACDXB*EK  /  A22JUNDACDXB.D ──
       if (cmd.endsWith("/") && cmd.startsWith("A")) return this.process(cmd.slice(0, -1));
-      const avail = cmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})([\/*][A-Z0-9]{2,3})?(\.D)?$/);
+      const cleanAvailCmd = cmd.replace(/#+$/, "");
+      const avail = cleanAvailCmd.match(/^A(\d{2}[A-Z]{3})([A-Z]{3})([A-Z]{3})([\/*][A-Z0-9]{2,3})?(\.D)?$/);
       if (avail) {
         const [, dateStr, orig, dest, pref] = avail;
         const aOrig = GalileoAirports.find(orig);
