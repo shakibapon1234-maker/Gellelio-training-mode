@@ -6,11 +6,15 @@
   const DAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 
   function dayOfDate(dateStr) {
-    // dateStr like "01APR" — use a fixed reference (01APR27 = THU)
+    // dateStr like "01APR" or "20DEC" or "20DEC26"
     const MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
-    const d = parseInt(dateStr.slice(0,2));
-    const m = MONTHS[dateStr.slice(2,5)];
-    const dt = new Date(2027, m, d);
+    const m = String(dateStr).trim().toUpperCase().match(/^(\d{1,2})([A-Z]{3})(\d{2})?$/);
+    if (!m) return "MON";
+    const d = parseInt(m[1], 10);
+    const mon = MONTHS[m[2]];
+    if (mon === undefined) return "MON";
+    const yr = m[3] ? (2000 + parseInt(m[3], 10)) : 2026;
+    const dt = new Date(yr, mon, d);
     return DAYS[dt.getDay()];
   }
 
@@ -163,7 +167,7 @@
         if (orig === dest) return this.error("ORIGIN AND DESTINATION MUST DIFFER");
 
         const carrier = pref && pref.length === 3 ? pref.slice(1) : null;
-        const results = GalileoFlights.search({ origin: orig, destination: dest, carrier: carrier });
+        const results = GalileoFlights.search({ origin: orig, destination: dest, carrier: carrier, date: dateStr });
         this.state.results = results;
         this.state.availability = true;
         this.state.availPage = 0;

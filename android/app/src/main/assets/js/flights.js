@@ -189,12 +189,47 @@
     }
   ];
 
-  function search({ origin, destination, carrier }) {
+  function search({ origin, destination, carrier, date }) {
     // DAC-JED training board matches the live Smartpoint availability (direct + connections)
     let results;
-    if (origin === "DAC" && destination === "BKK") {
+    const reqDate = date ? date.slice(0, 5) : null;
+    const reqFreq = reqDate ? reqDate.slice(0, 2) : null;
+
+    if (origin === "DAC" && destination === "SIN") {
+      const sinDate = reqDate || "20DEC";
+      const sinFreq = reqFreq || sinDate.slice(0, 2);
+      results = [
+        {
+          line: 1, carrier: "BS", number: "307", date: sinDate, freq: sinFreq,
+          origin: "DAC", destination: "SIN", depart: "2215", arrive: "#0430", equip: "738",
+          termOrig: "1", termDest: "1", airline_full: "US-BANGLA AIRLINES",
+          classes: { Y: 9, B: 9, H: 9, M: 9, R: 9, K: 9, U: 9, N: 9, V: 9 },
+          rows: ["O9 I9 K8"],
+          notes: ["ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS",
+                  "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION",
+                  "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES",
+                  "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"]
+        },
+        {
+          line: 2, carrier: "SQ", number: "447", date: sinDate, freq: sinFreq,
+          origin: "DAC", destination: "SIN", depart: "2355", arrive: "#0605", equip: "787",
+          termOrig: "1", termDest: "2", airline_full: "SINGAPORE AIRLINES",
+          classes: { J: 9, C: 9, D: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9, W: 9 },
+          rows: ["T9 K9 S9 V9 W9 LC"],
+          notes: ["DEPARTS DAC TERMINAL 1 - ARRIVES SIN TERMINAL 2"]
+        },
+        {
+          line: 3, carrier: "BG", number: "584", date: sinDate, freq: sinFreq,
+          origin: "DAC", destination: "SIN", depart: "0825", arrive: "1430", equip: "738",
+          termOrig: "1", termDest: "1", airline_full: "BIMAN BANGLADESH AIRLINES",
+          classes: { Y: 9, B: 9, M: 9, H: 9, Q: 9, K: 9, L: 9 },
+          rows: ["V9 G9"],
+          notes: ["DEPARTS DAC TERMINAL 1 - ARRIVES SIN TERMINAL 1"]
+        }
+      ];
+    } else if (origin === "DAC" && destination === "BKK") {
       const carriers = [["TG", "340", "330"], ["TG", "322", "333"], ["OD", "163", "7M8"], ["TG", "418", "789"], ["BS", "315", "333"], ["@TG", "4716", "7M8"], ["MH", "197", "332"], ["@TG", "4702", "7M8"], ["SQ", "447", "787"], ["TG", "402", "320"], ["MH", "103", "7M8"], ["TG", "418", "789"], ["BS", "315", "333"], ["@TG", "4782", "73H"], ["VZ", "307", "320"]];
-      results = carriers.map((flight, index) => ({ line: index + 1, carrier: flight[0], number: flight[1], date: "15NOV", freq: "15", origin: "DAC", destination: index === 2 || index === 6 ? "KUL" : "BKK", depart: ["0200", "1340", "1300", "2105", "0825", "1620", "0050", "0910", "2355", "0815", "1230", "2105", "0825", "1520", "1730"][index], arrive: ["0530", "1710", "1850", "2210", "1420", "1740", "0650", "1020", "0600", "0935", "1840", "2210", "1420", "1545", "1900"][index], equip: flight[2], termOrig: "1", termDest: "1", airline_full: "TRAINING CARRIER", classes: { C: 9, D: 9, J: 9, Z: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9, T: 9, K: 9, S: 9, V: 9, W: 9, L: 9, G: 9, R: 9, U: 9 }, rows: ["T9 K9 S9 V9 W9 LC", "H9 Q9 T9 K9 S9 V9 W9"], notes: [] }));
+      results = carriers.map((flight, index) => ({ line: index + 1, carrier: flight[0], number: flight[1], date: (typeof reqDate !== "undefined" && reqDate) || "15NOV", freq: (typeof reqFreq !== "undefined" && reqFreq) || "15", origin: "DAC", destination: index === 2 || index === 6 ? "KUL" : "BKK", depart: ["0200", "1340", "1300", "2105", "0825", "1620", "0050", "0910", "2355", "0815", "1230", "2105", "0825", "1520", "1730"][index], arrive: ["0530", "1710", "1850", "2210", "1420", "1740", "0650", "1020", "0600", "0935", "1840", "2210", "1420", "1545", "1900"][index], equip: flight[2], termOrig: "1", termDest: "1", airline_full: "TRAINING CARRIER", classes: { C: 9, D: 9, J: 9, Z: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9, T: 9, K: 9, S: 9, V: 9, W: 9, L: 9, G: 9, R: 9, U: 9 }, rows: ["T9 K9 S9 V9 W9 LC", "H9 Q9 T9 K9 S9 V9 W9"], notes: [] }));
     } else if (origin === "DAC" && destination === "JED") {
       results = FLIGHTS.slice();
     } else {
@@ -240,7 +275,7 @@
 
   function formatLine(f) {
     const p = formatParts(f);
-    return `${p.ln} ${p.orig} ${p.dest} ${p.depart} ${p.arrive}  ${p.carrier} ${p.number}  ${p.classes} ${p.equip} ${p.flag}`;
+    return `${p.ln} ${p.orig} ${p.dest} ${p.arrive && p.arrive.startsWith("#") ? (p.depart + p.arrive) : (p.depart + " " + p.arrive)}  ${p.carrier} ${p.number}  ${p.classes} ${p.equip} ${p.flag}`;
   }
 
   global.GalileoFlights = { search, byLine, formatLine, formatParts, formatClasses, all: FLIGHTS };

@@ -347,19 +347,77 @@ function setLeftPane(lines, showButtons) {
   if (leftPassenger) leftPassenger.hidden = true;
 }
 
+function formatArriveTime(depart, arrive) {
+  if (!arrive) return "";
+  const arr = String(arrive).trim();
+  if (arr.startsWith("#") || arr.startsWith("+") || arr.startsWith("-")) return arr;
+  const depNum = parseInt(String(depart || "").replace(/\D/g, ""), 10);
+  const arrNum = parseInt(arr.replace(/\D/g, ""), 10);
+  if (!isNaN(depNum) && !isNaN(arrNum) && arrNum < depNum) {
+    return "#" + arr;
+  }
+  return arr;
+}
+
+function getSegmentDayCode(dateStr, depart, arrive) {
+  if (!dateStr) return "";
+  const MONTHS = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11 };
+  const DAYS_2 = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  const m = String(dateStr).trim().toUpperCase().match(/^(\d{1,2})([A-Z]{3})(\d{2})?$/);
+  if (!m) return "";
+  const d = parseInt(m[1], 10);
+  const mon = MONTHS[m[2]];
+  if (mon === undefined) return "";
+  const yr = m[3] ? 2000 + parseInt(m[3], 10) : 2026;
+  const dt = new Date(yr, mon, d);
+  const depDayIdx = dt.getDay();
+  const depDay = DAYS_2[depDayIdx];
+
+  let offset = 0;
+  const arrStr = String(arrive || "").trim();
+  if (arrStr.startsWith("#") || arrStr.startsWith("+1")) offset = 1;
+  else if (arrStr.startsWith("+2")) offset = 2;
+  else if (arrStr.startsWith("-1") || arrStr.startsWith("-")) offset = -1;
+  else {
+    const depNum = parseInt(String(depart || "").replace(/\D/g, ""), 10);
+    const arrNum = parseInt(arrStr.replace(/\D/g, ""), 10);
+    if (!isNaN(depNum) && !isNaN(arrNum) && arrNum < depNum) offset = 1;
+  }
+
+  const arrDayIdx = (depDayIdx + offset + 7) % 7;
+  const arrDay = DAYS_2[arrDayIdx];
+  if (offset !== 0 || depDay !== arrDay) {
+    return depDay + "/" + arrDay;
+  }
+  return depDay;
+}
+
 function refreshLeftPassenger() {
   if (!leftPassenger) return;
   const name = engine.state.names && engine.state.names[0];
-  leftPassenger.textContent = name || "";
+  leftPassenger.textContent = name ? name.replace(/^(\d+)-/, "$1.1") : "";
   leftPassenger.hidden = !name;
 }
 
 function renderLeftSegment(seg, notes) {
   if (!seg || !leftSegment || !leftSegmentHeader || !leftSegmentNotes) return;
   const status = "HS" + (seg.paxCount || 1);
-  leftSegmentHeader.innerHTML = '<span class="segment-number">' + seg.segNum + '.</span>  <span class="segment-airline">' + seg.carrier + '</span>  ' + seg.number + '  <span class="segment-class">' + seg.soldClass + '</span>' + (seg.paxCount || 1) + '  ' + seg.date + '  <span class="segment-airline">' + seg.origin + seg.destination + '</span>  ' + status + '  ' + seg.depart + '  ' + seg.arrive + '  O';
+  const arriveStr = formatArriveTime(seg.depart, seg.arrive);
+  const dayCode = getSegmentDayCode(seg.date, seg.depart, arriveStr);
+  leftSegmentHeader.innerHTML =
+    '<span class="segment-number">' + seg.segNum + '.</span> ' +
+    '<span class="segment-airline">' + seg.carrier + '</span>  ' + seg.number + ' ' +
+    '<span class="segment-class">' + seg.soldClass + '</span> ' +
+    seg.date + ' <span class="segment-airline">' + seg.origin + seg.destination + '</span> ' +
+    status + '  ' + seg.depart + ' ' + arriveStr + ' 0' +
+    (dayCode ? ('        ' + dayCode) : '');
   leftSegmentNotes.classList.remove("pnr-details");
-  leftSegmentNotes.textContent = (notes && notes.length ? notes : ["ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS", "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION", "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES", "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"]).join("\n");
+  leftSegmentNotes.textContent = (notes && notes.length ? notes : [
+    "ADD ADVANCE PASSENGER INFORMATION SSRS DOCA/DOCO/DOCS",
+    "PERSONAL DATA WHICH IS PROVIDED TO US IN CONNECTION",
+    "WITH YOUR TRAVEL MAY BE PASSED TO GOVERNMENT AUTHORITIES",
+    "FOR BORDER CONTROL AND AVIATION SECURITY PURPOSES"
+  ]).join("\n");
   if (leftMsg) leftMsg.hidden = true;
   leftSegmentNotes.hidden = false;
   leftSegment.hidden = false;
@@ -374,12 +432,12 @@ function refreshLeftButtons() {
     return;
   }
   const commands = ["*ALL"];
-  commands.push("*RV");
   if (s.phones && s.phones.length) commands.push("*P");
   if (s.ticketing) commands.push("*TD");
   if (s.filedFare) commands.push("*FF");
   if (s.ssr && s.ssr.length) commands.push("*SI");
   if (s.saved) commands.push("*VL", "*VR");
+  commands.push("*RV");
   leftBtns.innerHTML = commands.map(function(command) { return '<button class="left-btn' + (command === activeLeftCommand ? ' selected' : '') + '" data-cmd="' + command + '">' + command + '</button>'; }).join("");
   leftBtns.style.display = "flex";
 }
