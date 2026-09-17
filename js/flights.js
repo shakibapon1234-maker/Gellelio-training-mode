@@ -252,7 +252,7 @@
         ["EK", "587", "77W", "1930", "2230"], ["SQ", "447", "787", "2355", "0600"],
         ["MH", "197", "332", "0050", "0650"], ["TK", "713", "77W", "0610", "1200"]
       ].map((flight, index) => ({
-        line: index + 1, carrier: flight[0], number: flight[1], date: "15NOV", freq: "15",
+        line: index + 1, carrier: flight[0], number: flight[1], date: reqDate || "15NOV", freq: reqFreq || "15",
         origin, destination, depart: flight[3], arrive: flight[4], equip: flight[2],
         classes: { J: 9, C: 9, D: 9, Y: 9, B: 9, M: 9, H: 9, Q: 9, T: 9, K: 9, S: 9, V: 9, W: 9, L: 9, G: 9, R: 9, U: 9 },
         rows: ["T9 K9 S9 V9 W9 LC", "H9 Q9 T9 K9 S9 V9 W9"], notes: []
